@@ -1,5 +1,3 @@
-# rax25kb
-KISS Serial to TCP Bridge
 ---
 date: December 2024
 section: 1
