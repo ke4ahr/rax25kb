@@ -40,26 +40,17 @@ Serial Port Options
     This option overrides the **serial\_port** configuration file
     setting.
 
-```{=html}
-<!-- -->
-```
 
 **-b**, **\--baud-rate** *RATE*
 
 :   Set the serial port baud rate. Common values are 1200, 9600, 19200,
     38400, and 115200. Default is 9600.
 
-```{=html}
-<!-- -->
-```
 
 **-s**, **\--stop-bits** *1\|2*
 
 :   Set the number of stop bits. KISS TNC default is 1. Values: 1 or 2.
 
-```{=html}
-<!-- -->
-```
 
 **-Q**, **\--parity** *n\|e\|o*
 
@@ -74,27 +65,18 @@ Flow Control Options
 :   Enable software flow control (XON/XOFF). Use this for older modems
     or devices that support software flow control.
 
-```{=html}
-<!-- -->
-```
 
 **-H**, **\--rts-cts**
 
 :   Enable hardware flow control (RTS/CTS). Use this for modern TNCs
     that support hardware flow control.
 
-```{=html}
-<!-- -->
-```
 
 **\--dtr-dsr**
 
 :   Enable DTR/DSR flow control. Primarily for Windows systems with
     devices that use Data Terminal Ready and Data Set Ready signals.
 
-```{=html}
-<!-- -->
-```
 
 **-N**, **\--none**
 
@@ -112,26 +94,17 @@ Network Options
     localhost), or **0.0.0.0 ::** (both IPv4 and IPv6). Default is
     **0.0.0.0**.
 
-```{=html}
-<!-- -->
-```
 
 **-p**, **\--port** *PORT*
 
 :   Set the TCP listening port. Default is 8001.
 
-```{=html}
-<!-- -->
-```
 
 **-4**
 
 :   Listen on IPv4 addresses only. Filters out IPv6 addresses from the
     address list.
 
-```{=html}
-<!-- -->
-```
 
 **-6**
 
@@ -146,9 +119,6 @@ Feature Options
 :   Dump KISS frames in xxd-like hexadecimal format. Shows the complete
     frame contents with both hex and ASCII representation.
 
-```{=html}
-<!-- -->
-```
 
 **-k**, **\--kiss**
 
@@ -156,9 +126,6 @@ Feature Options
     type, port number, and decoded AX.25 header information including
     callsigns with SSIDs.
 
-```{=html}
-<!-- -->
-```
 
 **-a**, **\--ax25**
 
@@ -166,9 +133,6 @@ Feature Options
     **-k**, this displays the payload of AX.25 UI frames in
     human-readable hex dump format.
 
-```{=html}
-<!-- -->
-```
 
 **-n**, **\--phil**
 
@@ -185,9 +149,6 @@ Feature Options
     Use this for hardware that doesn\'t properly implement KISS escaping
     or that misinterprets certain character sequences as commands.
 
-```{=html}
-<!-- -->
-```
 
 **-R**, **\--raw-copy**
 
@@ -214,27 +175,18 @@ Logging Options
 :   Write log messages to the specified file. Logs include timestamps
     and severity levels.
 
-```{=html}
-<!-- -->
-```
 
 **-L**, **\--log-level** *LEVEL*
 
 :   Set the logging level from 0 (emergency) to 9 (verbose). Default is
     5 (notice). See **LOG LEVELS** section below.
 
-```{=html}
-<!-- -->
-```
 
 **\--console-only**
 
 :   Log only to the console. Disables file logging even if **-l** is
     specified.
 
-```{=html}
-<!-- -->
-```
 
 **\--no-console**
 
@@ -249,9 +201,6 @@ Output Options
     be opened in Wireshark for detailed protocol analysis. Only AX.25
     data frames (KISS command 0) are captured.
 
-```{=html}
-<!-- -->
-```
 
 **-P**, **\--pidfile** *FILE*
 
@@ -266,18 +215,12 @@ General Options
 :   Use the specified configuration file instead of the default
     *rax25kb.cfg*.
 
-```{=html}
-<!-- -->
-```
 
 **-q**, **\--quiet**
 
 :   Suppress startup banner and configuration display. Errors and log
     messages are still displayed according to the log level.
 
-```{=html}
-<!-- -->
-```
 
 **-h**, **\--help**
 
@@ -297,34 +240,22 @@ Configuration Options
 
 :   Serial port device path (required).
 
-```{=html}
-<!-- -->
-```
 
 **baud\_rate**
 
 :   Serial port baud rate. Default: 9600.
 
-```{=html}
-<!-- -->
-```
 
 **stop\_bits**
 
 :   Number of stop bits. Values: 1, 2, one, two. KISS TNC default: 1.
 
-```{=html}
-<!-- -->
-```
 
 **parity**
 
 :   Parity checking. Values: none, n, no, even, e, odd, o. KISS TNC
     default: none.
 
-```{=html}
-<!-- -->
-```
 
 **flow\_control**
 
@@ -333,62 +264,41 @@ Configuration Options
     **xonxoff**, **xon-xoff**, **rtscts**, **rts-cts**, **rts/cts**,
     **dtr-dsr**, **dtr/dsr**. Default: none.
 
-```{=html}
-<!-- -->
-```
 
 **tcp\_address**
 
 :   TCP listener address(es), space or comma separated. Default:
     0.0.0.0.
 
-```{=html}
-<!-- -->
-```
 
 **tcp\_port**
 
 :   TCP listener port. Default: 8001.
 
-```{=html}
-<!-- -->
-```
 
 **phil\_flag**
 
 :   Enable PhilFlag correction. Values: 0, 1, true, false, yes, no.
     Default: 0.
 
-```{=html}
-<!-- -->
-```
 
 **dump**
 
 :   Enable frame dumping. Values: 0, 1, true, false, yes, no.
     Default: 0.
 
-```{=html}
-<!-- -->
-```
 
 **parse\_kiss**
 
 :   Enable KISS frame parsing. Values: 0, 1, true, false, yes, no.
     Default: 0.
 
-```{=html}
-<!-- -->
-```
 
 **dump\_ax25**
 
 :   Enable AX.25 info field dumping. Values: 0, 1, true, false, yes, no.
     Default: 0.
 
-```{=html}
-<!-- -->
-```
 
 **raw\_copy**
 
@@ -396,33 +306,21 @@ Configuration Options
     data is copied bidirectionally without KISS frame processing.
     Values: 0, 1, true, false, yes, no. Default: 0.
 
-```{=html}
-<!-- -->
-```
 
 **log\_level**
 
 :   Logging level (0-9). Default: 5.
 
-```{=html}
-<!-- -->
-```
 
 **logfile**
 
 :   Log file path.
 
-```{=html}
-<!-- -->
-```
 
 **pidfile**
 
 :   PID file path.
 
-```{=html}
-<!-- -->
-```
 
 **pcap\_file**
 
@@ -558,17 +456,11 @@ FILES
 
 :   Default configuration file in the current directory.
 
-```{=html}
-<!-- -->
-```
 
 */var/log/rax25kb.log*
 
 :   Common location for log files on Unix systems.
 
-```{=html}
-<!-- -->
-```
 
 */var/run/rax25kb.pid*
 
@@ -662,9 +554,6 @@ modem chipsets:
     chipset bug where raw AX.25 frames are not properly converted to
     KISS format.
 
-```{=html}
-<!-- -->
-```
 
 **TCP to Serial (Transmit)**
 
