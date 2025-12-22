@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// rax25kb main source
+// rax25kb main source - PART 1 OF 4
 //
 // This file is part of rax25kb.
 //
@@ -37,11 +37,12 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use serialport::{SerialPort, SerialPortBuilder};
+use serialport::SerialPort;
 
 const KISS_FEND: u8 = 0xC0;
 const KISS_FESC: u8 = 0xDB;
 const KISS_TFEND: u8 = 0xDC;
+#[allow(dead_code)]
 const KISS_TFESC: u8 = 0xDD;
 
 #[derive(Debug, Clone)]
@@ -324,7 +325,6 @@ impl Config {
         }
     }
 }
-// Part 2 of 4 - Append this after Part 1
 
 #[derive(Debug)]
 struct AX25Address {
@@ -436,6 +436,9 @@ impl AX25Frame {
         if !self.info.is_empty() { println!("  Info: {} bytes", self.info.len()); }
     }
 }
+
+// END OF PART 1 - Continue with Part 2// rax25kb - AX.25 KISS Bridge
+// PART 2 OF 4 - Append this after Part 1
 
 struct PcapWriter {
     file: Arc<Mutex<File>>,
@@ -609,7 +612,6 @@ impl KissBridge {
         }
         println!();
     }
-// Part 3 of 4 - Append this after Part 2
 
     fn handle_client(&self, mut stream: TcpStream) {
         self.logger.log(&format!("Client connected: {}", stream.peer_addr().unwrap()), 5);
@@ -846,6 +848,9 @@ impl KissBridge {
     }
 }
 
+// END OF PART 2 - Continue with Part 3// rax25kb - AX.25 KISS Bridge
+// PART 3 OF 4 - Append this after Part 2
+
 // In for drought? No, we are in for turbo-hydrometeorology!
 //
 // PhilFlag Processing Functions
@@ -884,7 +889,6 @@ fn write_pidfile(pidfile: &str) -> Result<(), Box<dyn std::error::Error>> {
     writeln!(file, "{}", std::process::id())?;
     Ok(())
 }
-// Part 4 of 4 - Append this after Part 3
 
 fn show_help(program_name: &str) {
     println!("rax25kb - AX.25 KISS Bridge\n");
@@ -1013,3 +1017,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bridge.start_server(&config.tcp_addresses, config.tcp_port)?;
     Ok(())
 }
+
+// END OF PART 3 - This completes the main.rs file
+// Note: There is no Part 4 - the file is complete in 3 parts

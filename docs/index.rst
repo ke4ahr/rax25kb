@@ -1,0 +1,110 @@
+.. rax25kb documentation master file
+
+rax25kb - AX.25 KISS Bridge Documentation
+==========================================
+
+**rax25kb** is a high-performance bridge application that connects serial ports running the KISS (Keep It Simple Stupid) protocol to TCP sockets. It is designed for amateur radio packet applications, allowing APRS and other AX.25 software to communicate with hardware TNCs (Terminal Node Controllers) over TCP/IP.
+
+.. image:: https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg
+   :target: https://www.gnu.org/licenses/gpl-3.0
+   :alt: License
+
+.. image:: https://img.shields.io/badge/rust-2021-orange.svg
+   :target: https://www.rust-lang.org/
+   :alt: Rust 2021
+
+Features
+--------
+
+* **KISS Protocol Support**: Full implementation of the KISS TNC protocol
+* **AX.25 Frame Parsing**: Decode and display AX.25 packet information
+* **Dual Stack Networking**: Simultaneous IPv4 and IPv6 support
+* **PhilFlag Correction**: Hardware workaround for TASCO modem chipset bugs
+* **PCAP Capture**: Write packets to Wireshark-compatible capture files
+* **Raw Copy Mode**: Transparent pass-through for direct TNC access
+* **Flexible Serial Configuration**: Support for various baud rates, parity, stop bits, and flow control
+* **Comprehensive Logging**: Multi-level logging to console and/or file
+* **Cross-Platform**: Runs on Linux, Windows, macOS, and other Unix-like systems
+
+Quick Start
+-----------
+
+Installation
+~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Clone the repository
+   git clone https://github.com/ke4ahr/rax25kb.git
+   cd rax25kb
+
+   # Build the project
+   cargo build --release
+
+   # Install (Linux/Unix)
+   sudo ./cargo-inst.sh
+
+Basic Usage
+~~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Start with default configuration file
+   rax25kb
+
+   # Specify serial port and baud rate
+   rax25kb -D /dev/ttyUSB0 -b 9600
+
+   # Enable KISS frame parsing
+   rax25kb -D /dev/ttyUSB0 -k
+
+   # Enable PhilFlag correction for TASCO modems
+   rax25kb -D /dev/ttyUSB0 -n -k
+
+   # Capture packets to PCAP file
+   rax25kb -D /dev/ttyUSB0 --pcap packets.pcap
+
+Table of Contents
+-----------------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide
+
+   installation
+   configuration
+   usage
+   examples
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Technical Reference
+
+   kiss_protocol
+   ax25_protocol
+   philflag
+   architecture
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Development
+
+   building
+   contributing
+   changelog
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Additional Information
+
+   faq
+   troubleshooting
+   glossary
+   license
+
+Indices and Tables
+==================
+
+* :ref:`genindex`
+* :ref:`search`
+
