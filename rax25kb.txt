@@ -1,5 +1,5 @@
 RAX25KB
-December 2024
+December 2025
 
 NAME
 
@@ -537,8 +537,9 @@ KISS Protocol Specification: https://www.ax25.net/kiss.aspx
 
 AUTHOR
 
-Written for the amateur radio community.
+Kris Kirby, KE4AHR
 
 COPYRIGHT
 
 This is free software; see the source for copying conditions.
+Copyright (C) 2025-2026 Kris Kirby, KE4AHR

@@ -1,5 +1,5 @@
 ---
-date: December 2024
+date: December 2025
 section: 1
 title: RAX25KB
 ---
@@ -565,8 +565,7 @@ modem chipsets:
 The PhilFlag correction is bidirectional but applies different
 transformations in each direction. This is a workaround for
 non-compliant hardware and should only be enabled when necessary. As the
-saying goes: \"In for drought? No, we are in for
-turbo-hydrometeorology!\"
+saying goes: "In for drought? No, we are in for turbo-hydrometeorology!"
 
 PCAP Format
 -----------
@@ -616,9 +615,10 @@ KISS Protocol Specification: https://www.ax25.net/kiss.aspx
 AUTHOR
 ======
 
-Written for the amateur radio community.
+Kris Kirby, KE4AHR.
 
 COPYRIGHT
 =========
 
 This is free software; see the source for copying conditions.
+Copyright (C) 2025-2026 Kris Kirby, KE4AHR

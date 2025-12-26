@@ -1,723 +1,353 @@
-.TH RAX25KB 1 "December 20, 2025" "rax25kb 1.0.0" "User Commands"
+.TH RAX25KB 1 "2025-12-24" "rax25kb 2.0.0" "User Commands"
 .SH NAME
-rax25kb \- AX.25 KISS protocol bridge for serial to TCP connections
+rax25kb \- AX.25 KISS protocol bridge with multi-port cross-connect support
 .SH SYNOPSIS
 .B rax25kb
-[\fIOPTIONS\fR]
+[\fB\-c\fR \fIconfig_file\fR]
+[\fB\-q\fR]
+[\fB\-h\fR]
 .SH DESCRIPTION
 .B rax25kb
-is a bridge application that connects a serial port running the KISS (Keep It Simple Stupid) protocol to a TCP socket. It is designed for amateur radio packet applications, allowing APRS and other AX.25 software to communicate with hardware TNCs (Terminal Node Controllers) over TCP/IP.
-
-The application supports both IPv4 and IPv6, can parse and display AX.25 frames, write packet captures to PCAP format, and includes the PhilFlag correction for non-standard KISS implementations found in TASCO modem chipsets.
-
+is an AX.25 KISS protocol bridge that provides flexible cross-connect capabilities
+between serial ports and TCP sockets. It supports multiple TNCs, serial-to-serial
+bridging, KISS port translation, and various protocol correction features.
+.PP
+The program reads KISS frames from serial ports (TNCs) and forwards them to TCP
+clients, enabling amateur radio packet applications to communicate with TNCs over
+the network. It also supports bridging multiple TNCs together for digipeating
+and relay operations.
 .SH OPTIONS
-.SS "Serial Port Options"
 .TP
-.BR \-D ", " \-\-device " \fIDEVICE\fR"
-Specify the serial port device. On Linux, this is typically
-.I /dev/ttyUSB0
-or
-.IR /dev/ttyACM0 .
-On Windows, use
-.I COM3
-or similar. This option overrides the
-.B serial_port
-configuration file setting.
-
-.TP
-.BR \-b ", " \-\-baud\-rate " \fIRATE\fR"
-Set the serial port baud rate. Common values are 1200, 9600, 19200, 38400, and 115200. Default is 9600. Standard KISS TNCs typically use 9600 or 115200 baud.
-
-.TP
-.BR \-s ", " \-\-stop\-bits " \fI1|2\fR"
-Set the number of stop bits. KISS TNC default is 1. Values: 1 or 2 (or "one", "two").
-
-.TP
-.BR \-Q ", " \-\-parity " \fIn|e|o\fR"
-Set parity checking. KISS TNC default is none. Values:
-.BR n " (none), "
-.BR e " (even), "
-.BR o " (odd)."
-
-.SS "Flow Control Options"
-.TP
-.BR \-x ", " \-\-xon\-xoff
-Enable software flow control (XON/XOFF). Use this for older modems or devices that support software flow control.
-
-.TP
-.BR \-H ", " \-\-rts\-cts
-Enable hardware flow control (RTS/CTS). Use this for modern TNCs that support hardware flow control. Recommended for high-speed (115200 baud) connections.
-
-.TP
-.B \-\-dtr\-dsr
-Enable DTR/DSR flow control. Primarily for Windows systems with devices that use Data Terminal Ready and Data Set Ready signals.
-
-.TP
-.BR \-N ", " \-\-none
-Disable flow control (default). Use when no flow control is needed or supported by the TNC.
-
-.SS "Network Options"
-.TP
-.BR \-I ", " \-\-address " \fIADDR\fR"
-Specify one or more TCP listener addresses, separated by spaces or commas. Examples:
-.BR 0.0.0.0 " (all IPv4 interfaces), "
-.BR 127.0.0.1 " (localhost only), "
-.BR :: " (all IPv6 interfaces), "
-.BR ::1 " (IPv6 localhost), or "
-.BR "0.0.0.0 ::" " (both IPv4 and IPv6)."
-Default is
-.BR 0.0.0.0 .
-
-.TP
-.BR \-p ", " \-\-port " \fIPORT\fR"
-Set the TCP listening port. Default is 8001. Choose any unused port between 1024-65535.
-
-.TP
-.B \-4
-Listen on IPv4 addresses only. Filters out IPv6 addresses from the address list.
-
-.TP
-.B \-6
-Listen on IPv6 addresses only. Filters out IPv4 addresses from the address list.
-
-.SS "Feature Options"
-.TP
-.BR \-d ", " \-\-dump
-Dump KISS frames in xxd-like hexadecimal format. Shows the complete frame contents with both hex and ASCII representation. Useful for debugging packet structure issues.
-
-.TP
-.BR \-k ", " \-\-kiss
-Parse and display KISS frame information. Shows the KISS command type, port number, and decoded AX.25 header information including callsigns with SSIDs. Essential for monitoring packet flow.
-
-.TP
-.BR \-a ", " \-\-ax25
-Dump AX.25 information fields in xxd-like format. When combined with
-.BR \-k ,
-this displays the payload of AX.25 UI frames in human-readable hex dump format. Useful for debugging APRS and other packet data.
-
-.TP
-.BR \-n ", " \-\-phil
-Enable PhilFlag correction. This flag applies corrections for hardware with TASCO modem chipset bugs:
-.RS
-.IP \(bu 2
-.B Serial to TCP (Receive):
-Replace unescaped FEND bytes (0xC0) inside KISS frames with the proper escape sequence (0xDB 0xDC).
-.IP \(bu 2
-.B TCP to Serial (Transmit):
-Escape 'C' (0x43) and 'c' (0x63) characters as (0xDB 0x43) and (0xDB 0x63) to prevent the radio from parsing "TC0\\n" or "tc0\\n" command sequences.
-.RE
-.IP
-Use this for hardware that doesn't properly implement KISS escaping or that misinterprets certain character sequences as commands. See the
-.B PHILFLAG CORRECTION
-section below.
-
-.TP
-.BR \-R ", " \-\-raw\-copy
-Enable raw copy mode (transparent pass-through). When enabled, all data is copied bidirectionally between TCP and serial without KISS frame processing. This mode is useful for:
-.RS
-.IP \(bu 2
-Direct terminal access to the TNC
-.IP \(bu 2
-Non-KISS protocols
-.IP \(bu 2
-Firmware updates
-.IP \(bu 2
-TNC configuration and command mode access
-.RE
-.IP
-Note: PhilFlag, frame parsing, and PCAP capture are disabled in raw copy mode.
-
-.SS "Logging Options"
-.TP
-.BR \-l ", " \-\-logfile " \fIFILE\fR"
-Write log messages to the specified file. Logs include timestamps and severity levels. On Linux, common locations are /var/log/rax25kb.log. On Windows, use C:\\ProgramData\\rax25kb\\rax25kb.log.
-
-.TP
-.BR \-L ", " \-\-log\-level " \fILEVEL\fR"
-Set the logging level from 0 (emergency) to 9 (verbose). Default is 5 (notice). See
-.B LOG LEVELS
-section below. Higher levels produce more detailed output but may impact performance.
-
-.TP
-.B \-\-console\-only
-Log only to the console. Disables file logging even if
-.B \-l
-is specified. Useful for systemd services that capture stdout.
-
-.TP
-.B \-\-no\-console
-Log only to the specified log file. Disables console output. Useful for daemon operation.
-
-.SS "Output Options"
-.TP
-.B \-\-pcap " \fIFILE\fR"
-Write AX.25 frames to a PCAP (packet capture) file. The output can be opened in Wireshark for detailed protocol analysis. Only AX.25 data frames (KISS command 0) are captured. Uses data link type 147 (USER0).
-
-.TP
-.BR \-P ", " \-\-pidfile " \fIFILE\fR"
-Write the process ID to the specified file on startup. Useful for init scripts and process management. Common locations: /var/run/rax25kb.pid (Linux), C:\\ProgramData\\rax25kb\\rax25kb.pid (Windows).
-
-.SS "General Options"
-.TP
-.BR \-c " \fIFILE\fR"
-Use the specified configuration file instead of the default
-.IR rax25kb.cfg .
-The configuration file uses a simple key=value format. See the
-.B CONFIGURATION FILE
-section below.
-
+.BR \-c ", " \-\-config " \fIfile\fR"
+Specify configuration file (default: rax25kb.cfg)
 .TP
 .BR \-q ", " \-\-quiet
-Suppress startup banner and configuration display. Errors and log messages are still displayed according to the log level.
-
+Quiet startup - suppress banner and informational output
 .TP
 .BR \-h ", " \-\-help
-Display help message and exit. Shows all available options with brief descriptions.
-
-.SH CONFIGURATION FILE
-The configuration file
-.I rax25kb.cfg
-uses a simple
-.I key=value
-format. Values may be enclosed in double quotes. Lines beginning with
-.B #
-are comments. All command-line options can be specified in the configuration file, with command-line options taking precedence.
-
-.SS "Configuration Options"
-.TP
-.B serial_port
-Serial port device path (required). Examples: /dev/ttyUSB0 (Linux), COM3 (Windows).
-
-.TP
-.B baud_rate
-Serial port baud rate. Default: 9600. Common values: 1200, 9600, 19200, 38400, 115200.
-
-.TP
-.B stop_bits
-Number of stop bits. Values: 1, 2, one, two. KISS TNC default: 1.
-
-.TP
-.B parity
-Parity checking. Values: none, n, no, even, e, odd, o. KISS TNC default: none.
-
-.TP
-.B flow_control
-Serial port flow control. Values:
-.BR none ", " software ", " hardware ", " dtrdsr .
-Alternative spellings accepted:
-.BR xon ", " xonxoff ", " xon-xoff ", " rtscts ", " rts-cts ", " rts/cts ", " dtr-dsr ", " dtr/dsr .
-Default: none.
-
-.TP
-.B tcp_address
-TCP listener address(es), space or comma separated. Default: 0.0.0.0. Can specify multiple addresses for multi-homed systems.
-
-.TP
-.B tcp_port
-TCP listener port. Default: 8001. Valid range: 1-65535.
-
-.TP
-.B phil_flag
-Enable PhilFlag correction. Values: 0, 1, true, false, yes, no. Default: 0.
-
-.TP
-.B dump
-Enable frame dumping. Values: 0, 1, true, false, yes, no. Default: 0.
-
-.TP
-.B parse_kiss
-Enable KISS frame parsing. Values: 0, 1, true, false, yes, no. Default: 0.
-
-.TP
-.B dump_ax25
-Enable AX.25 info field dumping. Values: 0, 1, true, false, yes, no. Default: 0.
-
-.TP
-.B raw_copy
-Enable raw copy mode (transparent pass-through). When enabled, all data is copied bidirectionally without KISS frame processing. Values: 0, 1, true, false, yes, no. Default: 0.
-
-.TP
-.B log_level
-Logging level (0-9). Default: 5.
-
-.TP
-.B logfile
-Log file path. If not specified, only console logging is used.
-
-.TP
-.B pidfile
-PID file path. Process ID is written on startup.
-
-.TP
-.B pcap_file
-PCAP output file path. Only AX.25 data frames are captured.
-
-.SS "Example Configuration File"
-.nf
-.RS
-# rax25kb.cfg - KISS TNC Bridge Configuration
-# Standard KISS TNC settings: 9600 baud, 8N1, no flow control
-serial_port=/dev/ttyUSB0
-baud_rate=9600
-stop_bits=1
-parity=none
-flow_control=none
-
-# Network configuration - listen on all interfaces
-tcp_address="0.0.0.0 ::"
-tcp_port=8001
-
-# Enable PhilFlag for TASCO modem chipsets
-phil_flag=1
-
-# Enable KISS frame parsing and AX.25 decoding
-parse_kiss=1
-dump_ax25=1
-
-# Logging configuration
-log_level=6
-logfile=/var/log/rax25kb.log
-
-# Output files
-pidfile=/var/run/rax25kb.pid
-pcap_file=/var/log/rax25kb.pcap
-.RE
-.fi
-
-.SH LOG LEVELS
-.TP
-.B 0 - EMERG
-System is unusable. Reserved for catastrophic failures.
-.TP
-.B 1 - ALERT
-Action must be taken immediately. Critical system issues.
-.TP
-.B 2 - CRIT
-Critical conditions. Serious errors requiring attention.
-.TP
-.B 3 - ERROR
-Error conditions. Operation failures that don't stop the program.
-.TP
-.B 4 - WARN
-Warning conditions. Potential problems that don't affect operation.
-.TP
-.B 5 - NOTICE
-Normal but significant condition (default). Informational messages about normal operation.
-.TP
-.B 6 - INFO
-Informational messages. Detailed operational information.
-.TP
-.B 7 - DEBUG
-Debug-level messages. Detailed information for troubleshooting.
-.TP
-.B 8 - TRACE
-Detailed trace messages. Very verbose output for deep debugging.
-.TP
-.B 9 - VERBOSE
-Maximum verbosity. Every operation is logged.
-
-.SH PHILFLAG CORRECTION
-PhilFlag is a bidirectional correction mechanism for TASCO modem chipsets that improperly handle KISS protocol escaping.
-
-.SS "The Problem"
-Some radios using TASCO modem chipsets have bugs in their KISS implementation:
-.RS
-.IP 1. 4
-.B Improper KISS Escaping:
-The modem fails to properly escape 0xC0 (FEND) bytes when converting raw AX.25 frames to KISS format, leaving unescaped frame delimiters within packet data.
-.IP 2. 4
-.B Command Misinterpretation:
-The modem incorrectly interprets "TC0\\n" or "tc0\\n" character sequences as commands, causing unexpected behavior or mode changes.
-.RE
-
-.SS "The Solution"
-PhilFlag corrects these issues bidirectionally:
-
-.RS
-.B Serial to TCP (Receive Path):
-.RS
-Detects unescaped 0xC0 bytes inside KISS frames and replaces them with the proper escape sequence (0xDB 0xDC).
-.RE
-
-.B TCP to Serial (Transmit Path):
-.RS
-Escapes 'C' (0x43) and 'c' (0x63) characters as (0xDB 0x43) and (0xDB 0x63) to prevent the TNC from seeing "TC0\\n" as a command.
-.RE
-.RE
-
-.SS "When to Use"
-Enable PhilFlag (
-.B \-n
-option) if:
-.RS
-.IP \(bu 2
-You have a TASCO modem-based radio
-.IP \(bu 2
-You experience corrupted packets
-.IP \(bu 2
-Packets contain 0xC0 bytes in the payload
-.IP \(bu 2
-The modem resets unexpectedly
-.IP \(bu 2
-You see "TC0" in diagnostic output
-.RE
-
-Do NOT enable PhilFlag if your TNC properly implements KISS escaping.
-
-.SS "Known Affected Hardware"
-.RS
-.IP \(bu 2
-QYT radios with TASCO modems (various models)
-.IP \(bu 2
-Chinese-manufactured radios from 2015-2020 with TASCO chipsets
-.IP \(bu 2
-Generic TASCO TX-1H, TX-2H series implementations
-.RE
-
-.SS "Performance Impact"
-PhilFlag adds minimal overhead: ~2-5% CPU increase for byte scanning and escaping. The overhead is negligible on modern systems.
-
-.SH SIGNALS
-.TP
-.B SIGINT
-Graceful shutdown. The application catches Ctrl+C (SIGINT) and exits cleanly, closing all connections properly.
-
-.SH WINDOWS USAGE
+Display help message and exit
+.SH FEATURES
+.SS Multi-Port Support
 .B rax25kb
-fully supports Windows operation with some platform-specific considerations.
-
-.SS "Serial Port Names"
-Windows uses COM ports:
+supports multiple serial ports with independent configurations. Each port
+can have different baud rates, flow control, parity, and stop bit settings.
+.SS Cross-Connect System
+Cross-connects define connections between endpoints:
+.IP \(bu 2
+Serial port to TCP socket
+.IP \(bu 2
+Serial port to serial port (bridging)
+.IP \(bu 2
+KISS port translation (ports 0-15)
+.IP \(bu 2
+Standard KISS to Extended KISS translation
+.SS KISS Protocol Support
+Full implementation of the KISS protocol including:
+.IP \(bu 2
+Frame boundary detection (0xC0)
+.IP \(bu 2
+Byte stuffing and escape sequences
+.IP \(bu 2
+Multi-port addressing (0-15)
+.IP \(bu 2
+All KISS command types
+.SS PhilFlag Correction
+Corrects KISS protocol bugs in TASCO modem chipsets:
+.IP \(bu 2
+Serial→TCP: Escapes unescaped 0xC0 bytes
+.IP \(bu 2
+TCP→Serial: Escapes 'C' and 'c' characters to prevent TC0\\n interpretation
+.SS AX.25 Frame Parsing
+Parses and displays AX.25 frames with:
+.IP \(bu 2
+Callsign extraction with SSID
+.IP \(bu 2
+Digipeater path decoding
+.IP \(bu 2
+Frame type identification (I, S, U, UI)
+.IP \(bu 2
+Control byte interpretation
+.IP \(bu 2
+PID and information field display
+.SS PCAP Capture
+Captures AX.25 frames to PCAP format for analysis with Wireshark or other
+protocol analyzers. Uses DLT_AX25_KISS (147) link type.
+.SH CONFIGURATION
+Configuration is read from a text file (default: rax25kb.cfg) in key=value format.
+See
+.BR rax25kb.cfg (5)
+for detailed configuration syntax and examples.
+.SS Quick Configuration Example
 .nf
-.RS
-rax25kb.exe -D COM3 -b 9600 -p 8001
-rax25kb.exe -D COM4 -b 115200 -H -k
-.RE
-.fi
+# Serial port definition
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=9600
 
-.SS "File Paths"
-Use Windows-style paths with backslashes or forward slashes:
-.nf
-.RS
-rax25kb.exe -l C:\\ProgramData\\rax25kb\\log.txt
-rax25kb.exe -l C:/ProgramData/rax25kb/log.txt
-rax25kb.exe -P C:\\ProgramData\\rax25kb\\rax25kb.pid
-rax25kb.exe --pcap C:\\ProgramData\\rax25kb\\packets.pcap
-.RE
-.fi
+# Cross-connect: TNC to TCP
+cross_connect0000=serial:0000:0 <-> tcp:0.0.0.0:8001
+cross_connect0000_parse_kiss=true
 
-.SS "Windows Service Installation"
-Use NSSM (Non-Sucking Service Manager) to run as a service:
-.nf
-.RS
-# Download NSSM from https://nssm.cc/
-# Run as Administrator:
-
-nssm install rax25kb "C:\\Program Files\\rax25kb\\rax25kb.exe"
-nssm set rax25kb AppParameters -D COM3 -b 9600 -p 8001
-nssm set rax25kb AppDirectory "C:\\Program Files\\rax25kb"
-nssm set rax25kb DisplayName "rax25kb KISS Bridge"
-nssm set rax25kb Description "AX.25 KISS protocol bridge"
-nssm set rax25kb Start SERVICE_AUTO_START
-
-# Start the service
-nssm start rax25kb
-.RE
-.fi
-
-.SS "Windows Firewall"
-Allow incoming connections using PowerShell (as Administrator):
-.nf
-.RS
-New-NetFirewallRule -DisplayName "rax25kb" `
-                    -Direction Inbound `
-                    -Program "C:\\Program Files\\rax25kb\\rax25kb.exe" `
-                    -Action Allow `
-                    -Protocol TCP `
-                    -LocalPort 8001
-.RE
-.fi
-
-.SS "Finding COM Ports"
-List available COM ports:
-.nf
-.RS
-# PowerShell
-Get-WmiObject Win32_SerialPort | Select-Object Name,DeviceID
-
-# Or use Device Manager (devmgmt.msc)
-# Look under "Ports (COM & LPT)"
-.RE
-.fi
-
-.SS "Windows Configuration Example"
-.nf
-.RS
-# rax25kb.cfg for Windows
-serial_port=COM3
-baud_rate=9600
-stop_bits=1
-parity=none
-flow_control=none
-
-tcp_address=127.0.0.1
-tcp_port=8001
-
+# Logging
 log_level=5
-logfile=C:\\ProgramData\\rax25kb\\rax25kb.log
-pidfile=C:\\ProgramData\\rax25kb\\rax25kb.pid
+log_to_console=true
+.fi
+.SH KISS PORT ADDRESSING
+.B IMPORTANT:
+The default KISS TNC address is always port 0. Most TNCs only support port 0.
+.PP
+KISS ports are numbered 0-15 (4-bit addressing). Multi-port support requires
+TNC hardware/firmware that supports multiple ports. Consult your TNC manual
+for multi-port capabilities.
+.SH CROSS-CONNECT ENDPOINTS
+Cross-connects link two endpoints together:
+.TP
+.B tcp:address:port
+TCP socket endpoint. Address can be:
+.RS
+.IP \(bu 2
+0.0.0.0 - Listen on all interfaces
+.IP \(bu 2
+127.0.0.1 - Localhost only (more secure)
+.IP \(bu 2
+Specific IP - Listen on specific interface
 .RE
-.fi
-
+.TP
+.B serial:port_id:kiss_port
+Serial port endpoint with KISS port number (0-15).
+Port ID must match a defined serial_portXXXX entry.
+.SH SERIAL PORT FORMATS
+.TP
+.B 8N1
+8 data bits, No parity, 1 stop bit (most common, default)
+.TP
+.B 8N2
+8 data bits, No parity, 2 stop bits (some TNCs like Kenwood TS-2000)
+.TP
+.B 8E1
+8 data bits, Even parity, 1 stop bit (rare)
+.SH LOGGING
+Log levels (0-9):
+.TS
+tab(;);
+l l l.
+0;EMERG;Emergency - system unusable
+1;ALERT;Alert - immediate action required
+2;CRIT;Critical conditions
+3;ERROR;Error conditions
+4;WARN;Warning conditions
+5;NOTICE;Normal but significant (default)
+6;INFO;Informational messages
+7;DEBUG;Debug-level messages
+8;TRACE;Trace execution
+9;VERBOSE;Very detailed output
+.TE
 .SH EXAMPLES
-.SS "Basic Usage"
+.SS Example 1: Simple Single TNC
 .nf
-# Start with default configuration (8N1, no flow control)
-rax25kb
-
-# Use specific serial port and baud rate
-rax25kb -D /dev/ttyUSB0 -b 19200
-
-# Windows: Use COM port
-rax25kb.exe -D COM3 -b 9600
-
-# Set serial parameters: 8E1 with hardware flow control
-rax25kb -D /dev/ttyUSB0 -b 9600 -Q even -s 1 -H
-
-# Listen on localhost only with KISS parsing
-rax25kb -I 127.0.0.1 -p 8001 -k
+rax25kb -c /etc/rax25kb/simple.cfg
 .fi
-
-.SS "Advanced Usage"
+.PP
+With configuration:
 .nf
-# Full featured setup with PCAP capture
-rax25kb -D /dev/ttyUSB0 -b 9600 -H \\
-        -I "0.0.0.0 ::" -p 8001 \\
-        -k -a --pcap /var/log/packets.pcap \\
-        -l /var/log/rax25kb.log -L 7
-
-# Hardware with PhilFlag correction and odd parity
-rax25kb -D /dev/ttyUSB0 -Q odd -n -k
-
-# Software flow control for older equipment
-rax25kb -D /dev/ttyUSB0 -b 1200 -x -s 2
-
-# IPv6 only on specific address
-rax25kb -6 -I "2001:db8::1" -p 8001
-
-# Quiet mode with custom config
-rax25kb -c /etc/rax25kb/custom.cfg -q
-
-# Raw mode for TNC configuration
-rax25kb -D /dev/ttyUSB0 -R -p 8001
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=9600
+cross_connect0000=serial:0000:0 <-> tcp:0.0.0.0:8001
 .fi
-
-.SS "Windows-Specific Examples"
+.SS Example 2: Kenwood TS-2000
 .nf
-# Basic Windows startup
-rax25kb.exe -D COM3 -b 9600 -k
-
-# With DTR/DSR flow control
-rax25kb.exe -D COM3 --dtr-dsr
-
-# With log file and PCAP capture
-rax25kb.exe -D COM3 -b 9600 \\
-            -l C:\\ProgramData\\rax25kb\\log.txt \\
-            --pcap C:\\ProgramData\\rax25kb\\packets.pcap \\
-            -k -a
-
-# Using configuration file
-rax25kb.exe -c "C:\\Program Files\\rax25kb\\rax25kb.cfg"
+rax25kb -c /etc/rax25kb/ts2000.cfg
 .fi
-
-.SS "Systemd Service (Linux)"
+.PP
+With configuration:
 .nf
-# Create /etc/systemd/system/rax25kb.service:
-
-[Unit]
-Description=rax25kb AX.25 KISS Bridge
-After=network.target
-
-[Service]
-Type=simple
-User=radio
-Group=dialout
-WorkingDirectory=/home/radio
-ExecStart=/usr/local/bin/rax25kb -c /etc/rax25kb/rax25kb.cfg
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-
-# Enable and start:
-sudo systemctl daemon-reload
-sudo systemctl enable rax25kb
-sudo systemctl start rax25kb
-sudo systemctl status rax25kb
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=4800
+serial_port0000_stop_bits=2
+cross_connect0000=serial:0000:0 <-> tcp:127.0.0.1:8001
+cross_connect0000_phil_flag=true
 .fi
+.SS Example 3: Multiple TNCs
+.nf
+rax25kb -c /etc/rax25kb/multi.cfg
+.fi
+.PP
+With configuration:
+.nf
+# VHF TNC
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=9600
+cross_connect0000=serial:0000:0 <-> tcp:0.0.0.0:8001
 
+# UHF TNC
+serial_port0001=/dev/ttyUSB1
+serial_port0001_baud=9600
+cross_connect0001=serial:0001:0 <-> tcp:0.0.0.0:8002
+
+# HF TNC
+serial_port0002=/dev/ttyUSB2
+serial_port0002_baud=1200
+cross_connect0002=serial:0002:0 <-> tcp:0.0.0.0:8003
+.fi
+.SS Example 4: TNC Bridging (Digipeater)
+.nf
+rax25kb -c /etc/rax25kb/bridge.cfg
+.fi
+.PP
+With configuration:
+.nf
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=9600
+serial_port0001=/dev/ttyUSB1
+serial_port0001_baud=9600
+
+# Bridge TNCs together on KISS port 0
+cross_connect0000=serial:0000:0 <-> serial:0001:0
+cross_connect0000_parse_kiss=true
+.fi
 .SH FILES
 .TP
-.I rax25kb.cfg
-Default configuration file in the current directory.
-
+.B rax25kb.cfg
+Default configuration file (current directory)
 .TP
-.I /var/log/rax25kb.log
-Common location for log files on Unix systems.
-
+.B /etc/rax25kb/rax25kb.cfg
+System-wide configuration file
 .TP
-.I /var/run/rax25kb.pid
-Common location for PID files on Unix systems.
-
+.B /var/log/rax25kb.log
+Default log file location (if configured)
 .TP
-.I C:\\ProgramData\\rax25kb\\rax25kb.log
-Recommended log file location on Windows.
-
+.B /var/run/rax25kb.pid
+Default PID file location (if configured)
+.SH SIGNALS
 .TP
-.I C:\\ProgramData\\rax25kb\\rax25kb.pid
-Recommended PID file location on Windows.
-
+.B SIGINT, SIGTERM
+Gracefully shutdown all connections and exit
 .SH EXIT STATUS
 .TP
 .B 0
-Successful termination (including SIGINT).
+Success
 .TP
 .B 1
-Configuration error, unable to open serial port, unable to bind to TCP address, or other fatal error.
-
-.SH COMPATIBILITY
-.SS "Operating Systems"
-.B rax25kb
-runs on:
-.RS
+Configuration error or runtime error
+.SH DIAGNOSTICS
+.SS No packets received
 .IP \(bu 2
-Linux (all distributions)
+Verify TNC is in KISS mode
 .IP \(bu 2
-Windows 7 and later
+Check KISS port number (usually 0)
 .IP \(bu 2
-macOS 10.12 and later
+Confirm serial port settings
 .IP \(bu 2
-FreeBSD, OpenBSD, NetBSD
-.IP \(bu 2
-Other Unix-like systems with serial port support
-.RE
-
-.SS "KISS Protocol"
-Implements KISS protocol as defined in the TAPR specification with the following frame types:
-.RS
-.IP \(bu 2
-Data frames (command 0)
-.IP \(bu 2
-TXDELAY (command 1)
-.IP \(bu 2
-Persistence (command 2)
-.IP \(bu 2
-SlotTime (command 3)
-.IP \(bu 2
-TXtail (command 4)
-.IP \(bu 2
-FullDuplex (command 5)
-.IP \(bu 2
-SetHardware (command 6)
-.IP \(bu 2
-Return (command 15)
-.RE
-
-.SS "AX.25 Protocol"
-Parses AX.25 frames and identifies:
-.RS
-.IP \(bu 2
-I-frames (Information - connected mode data transfer)
-.IP \(bu 2
-S-frames (Supervisory - flow control and error recovery)
-.IP \(bu 2
-U-frames (Unnumbered control commands)
-.IP \(bu 2
-UI-frames (Unnumbered Information - connectionless, used by APRS)
-.RE
-
-.SH NOTES
-.SS "KISS TNC Default Settings"
-Standard KISS TNCs use 8N1 serial format (8 data bits, No parity, 1 stop bit) with no flow control. The application defaults match these settings. Adjust only if your hardware requires different parameters.
-
-.SS "Multiple TCP Addresses"
-When multiple TCP addresses are specified, the application listens on all of them simultaneously. Each address can accept one client connection at a time. Connections are handled sequentially; the application accepts a new connection only after the previous one closes.
-
-.SS "Serial Port Permissions (Unix/Linux)"
-On Unix systems, the user must have read/write permissions to the serial port device. This typically requires membership in the
-.B dialout
-or
-.B uucp
-group:
+Enable parse_kiss=true to see frame flow
+.SS Serial port permission denied
 .nf
-.RS
 sudo usermod -a -G dialout $USER
-# Log out and back in for changes to take effect
-.RE
+# Log out and back in
 .fi
-
-.SS "PCAP Format"
-PCAP files use data link type 147 (USER0) to store raw AX.25 frames. These can be analyzed in Wireshark with appropriate dissectors. Only KISS data frames (command 0) are captured; control frames are ignored.
-
-.SS "Raw Copy Mode"
-When raw copy mode (
-.B \-R
-) is enabled, rax25kb provides transparent bidirectional byte-stream copying between serial and TCP without any KISS or AX.25 processing. This is useful for:
+.SS Packets corrupted
+.IP \(bu 2
+Try enabling PhilFlag for TASCO modems or TS-2000
+.IP \(bu 2
+Check baud rate and serial format (8N1 vs 8N2)
+.IP \(bu 2
+Verify flow control settings
+.SS Address already in use
+Another process is using the TCP port. Check with:
+.nf
+sudo netstat -tlnp | grep 8001
+.fi
+.SH SECURITY CONSIDERATIONS
+.IP \(bu 2
+Use 127.0.0.1 for local-only access
+.IP \(bu 2
+Use 0.0.0.0 only when remote access is needed
+.IP \(bu 2
+Configure firewall rules for public-facing connections
+.IP \(bu 2
+No authentication is performed on TCP connections
+.SH PERFORMANCE
+.TP
+.B CPU Usage
+1-5% per active connection (typical)
+.TP
+.B Memory
+~5MB base + ~2MB per serial port + ~100KB per connection
+.TP
+.B Latency
+<1ms frame processing (typical)
+.TP
+.B Throughput
+Limited by serial port baud rate:
 .RS
 .IP \(bu 2
-Direct TNC command mode access
+1200 baud: ~150 bytes/sec
 .IP \(bu 2
-TNC firmware updates
+9600 baud: ~1200 bytes/sec
 .IP \(bu 2
-Non-KISS protocols
-.IP \(bu 2
-Debugging serial communication issues
+115200 baud: ~14,400 bytes/sec
 .RE
-
-In raw mode, PhilFlag, frame parsing, and PCAP capture are automatically disabled.
-
+.SH LIMITATIONS
+.IP \(bu 2
+One TCP client per cross-connect at a time
+.IP \(bu 2
+No SSL/TLS support
+.IP \(bu 2
+No authentication or access control
+.IP \(bu 2
+TCP-to-TCP cross-connects not supported
+.IP \(bu 2
+PCAP timestamps use system time
+.SH TNC COMPATIBILITY
+.SS Tested TNCs
+.IP \(bu 2
+Kenwood TS-2000 (requires 4800 baud, 8N2, PhilFlag)
+.IP \(bu 2
+Mobilinkd TNC3 (115200 baud, hardware flow control)
+.IP \(bu 2
+Kantronics KPC-3+ (9600 baud, 8N1)
+.IP \(bu 2
+Argent Data Tracker2 (9600 baud, 8N1)
+.IP \(bu 2
+TASCO modems (requires PhilFlag)
+.SS General Requirements
+.IP \(bu 2
+TNC must support KISS mode
+.IP \(bu 2
+Most TNCs use KISS port 0 only
+.IP \(bu 2
+Check TNC manual for correct serial settings
+.SH MIGRATION FROM v1.x
+Version 2.0 changes the configuration format. Old configurations must be updated:
+.PP
+.B Old format (v1.x):
+.nf
+serial_port=/dev/ttyUSB0
+baud_rate=9600
+tcp_port=8001
+.fi
+.PP
+.B New format (v2.0):
+.nf
+serial_port0000=/dev/ttyUSB0
+serial_port0000_baud=9600
+cross_connect0000=serial:0000:0 <-> tcp:0.0.0.0:8001
+.fi
 .SH BUGS
-Report bugs to the project repository or maintainer at https://github.com/ke4ahr/rax25kb/issues
-
-Known limitations:
-.IP \(bu 2
-Only one TCP client connection is handled at a time per listener address
-.IP \(bu 2
-No SSL/TLS support for TCP connections
-.IP \(bu 2
-PCAP timestamps use system time, not packet arrival time
-.IP \(bu 2
-No built-in authentication or access control
-
-.SH SEE ALSO
-.BR kissattach (8),
-.BR ax25 (4),
-.BR aprx (8),
-.BR direwolf (1),
-.BR xastir (1)
-
-AX.25 Protocol Specification: https://www.tapr.org/pdf/AX25.2.2.pdf
-.br
-KISS Protocol Specification: https://www.ax25.net/kiss.aspx
-.br
-Project Website: https://www.outpostpm.org/support.html
-.br
-GitHub Repository: https://github.com/ke4ahr/rax25kb
-
+Report bugs to: https://github.com/ke4ahr/rax25kb/issues
 .SH AUTHOR
-Written by Kris Kirby for the amateur radio community.
-
+Written by Kris Kirby and rax25kb contributors.
 .SH COPYRIGHT
-Copyright \(co 2025 rax25kb contributors
-
-This is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-.SH HISTORY
-.TP
-.B Version 1.0.0 (December 2025)
-Initial release with full KISS protocol support, AX.25 frame parsing, PhilFlag correction, PCAP capture, and cross-platform compatibility.
+Copyright \(co 2025 rax25kb contributors.
+.br
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
+.br
+This is free software: you are free to change and redistribute it.
+.br
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+.BR rax25kb.cfg (5),
+.BR ax25 (4),
+.BR kissattach (8)
+.PP
+Full documentation: https://www.outpostpm.org/support.html
+.br
+Project repository: https://github.com/ke4ahr/rax25kb

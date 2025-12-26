@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'rax25kb'
-copyright = '2025, rax25kb contributors'
-author = 'rax25kb contributors'
+copyright = '2025, Kris Kirby, KE4AHR'
+author = 'Kris Kirby, KE4AHR'
 release = '1.0.0'
 version = '1.0'
 

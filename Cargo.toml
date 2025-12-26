@@ -1,6 +1,6 @@
 [package]
 name = "rax25kb"
-version = "1.0.0"
+version = "1.5.1"
 edition = "2021"
 authors = ["rax25kb contributors"]
 description = "AX.25 KISS protocol bridge for serial to TCP connections"

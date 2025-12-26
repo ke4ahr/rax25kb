@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AX.25 Protocol &mdash; rax25kb 1.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PhilFlag Correction" href="philflag.html" />
+    <link rel="prev" title="KISS Protocol" href="kiss_protocol.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> rax25kb
+          </a>
+              <div class="version">
+                1.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#configuration-file">Configuration File</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#file-format">File Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#configuration-options">Configuration Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#serial-port-settings">Serial Port Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#network-settings">Network Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#feature-flags">Feature Flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#logging-settings">Logging Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="installation.html#output-settings">Output Settings</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#example-configuration-files">Example Configuration Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#basic-kiss-tnc-setup">Basic KISS TNC Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#advanced-configuration-with-philflag">Advanced Configuration with PhilFlag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#high-speed-tnc-with-hardware-flow-control">High Speed TNC with Hardware Flow Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#windows-configuration">Windows Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#command-line-overrides">Command-Line Overrides</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#serial-port-options">Serial Port Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#network-options">Network Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#feature-options">Feature Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#logging-options">Logging Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#complete-override-example">Complete Override Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#configuration-validation">Configuration Validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#test-configuration">Test Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#view-active-configuration">View Active Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#common-configuration-patterns">Common Configuration Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#localhost-only-development">Localhost Only (Development)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#public-access-production">Public Access (Production)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#dual-stack-ipv4-ipv6">Dual Stack (IPv4 + IPv6)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#debug-mode">Debug Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#production-mode">Production Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file">Configuration File</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#file-format">File Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-options">Configuration Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="configuration.html#serial-port-settings">Serial Port Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="configuration.html#network-settings">Network Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="configuration.html#feature-flags">Feature Flags</a></li>
+<li class="toctree-l4"><a class="reference internal" href="configuration.html#logging-settings">Logging Settings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="configuration.html#output-settings">Output Settings</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#example-configuration-files">Example Configuration Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#basic-kiss-tnc-setup">Basic KISS TNC Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#advanced-configuration-with-philflag">Advanced Configuration with PhilFlag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#high-speed-tnc-with-hardware-flow-control">High Speed TNC with Hardware Flow Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#windows-configuration">Windows Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#command-line-overrides">Command-Line Overrides</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#serial-port-options">Serial Port Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#network-options">Network Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#feature-options">Feature Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#logging-options">Logging Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#complete-override-example">Complete Override Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-validation">Configuration Validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#test-configuration">Test Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#view-active-configuration">View Active Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#common-configuration-patterns">Common Configuration Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#localhost-only-development">Localhost Only (Development)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#public-access-production">Public Access (Production)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#dual-stack-ipv4-ipv6">Dual Stack (IPv4 + IPv6)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#debug-mode">Debug Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#production-mode">Production Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#starting-rax25kb">Starting rax25kb</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#stopping-rax25kb">Stopping rax25kb</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#command-line-options">Command-Line Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#help-and-version">Help and Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#serial-port-options">Serial Port Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#flow-control-options">Flow Control Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#network-options">Network Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#feature-options">Feature Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#logging-options">Logging Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#output-options">Output Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#common-usage-patterns">Common Usage Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#basic-aprs-gateway">Basic APRS Gateway</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#with-kiss-parsing">With KISS Parsing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#debug-mode-with-full-logging">Debug Mode with Full Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#philflag-correction-for-tasco-modems">PhilFlag Correction for TASCO Modems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#packet-capture-for-analysis">Packet Capture for Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#high-speed-tnc-with-hardware-flow-control">High-Speed TNC with Hardware Flow Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#raw-mode-for-direct-tnc-access">Raw Mode for Direct TNC Access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#production-deployment">Production Deployment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#understanding-output">Understanding Output</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#startup-information">Startup Information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#log-messages">Log Messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#kiss-frame-display">KISS Frame Display</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#ax-25-info-field-display">AX.25 Info Field Display</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#hex-dump-display">Hex Dump Display</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#connecting-to-rax25kb">Connecting to rax25kb</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#using-telnet">Using Telnet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#using-netcat">Using netcat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#using-aprs-software">Using APRS Software</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#running-as-a-service">Running as a Service</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#linux-systemd-service">Linux systemd Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#windows-service">Windows Service</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#monitoring-and-management">Monitoring and Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#check-process-status">Check Process Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#monitor-log-file">Monitor Log File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#check-network-connections">Check Network Connections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#analyze-pcap-capture">Analyze PCAP Capture</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#basic-examples">Basic Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#simple-aprs-gateway">Simple APRS Gateway</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#development-and-testing">Development and Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#packet-capture-for-wireshark">Packet Capture for Wireshark</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#windows-specific-examples">Windows-Specific Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#basic-windows-setup">Basic Windows Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#windows-with-configuration-file">Windows with Configuration File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#windows-service-setup-nssm">Windows Service Setup (NSSM)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#windows-task-scheduler-setup">Windows Task Scheduler Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#windows-firewall-configuration">Windows Firewall Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#windows-with-aprs-software">Windows with APRS Software</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#advanced-examples">Advanced Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#high-speed-tnc-with-flow-control">High-Speed TNC with Flow Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#multiple-tncs-on-different-ports">Multiple TNCs on Different Ports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#ipv6-only-configuration">IPv6 Only Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#dual-stack-ipv4-ipv6">Dual Stack (IPv4 + IPv6)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#tasco-modem-with-philflag">TASCO Modem with PhilFlag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#raw-mode-for-tnc-configuration">Raw Mode for TNC Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#integration-examples">Integration Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#direwolf-integration">Direwolf Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#xastir-integration">Xastir Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#aprx-integration">APRX Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#systemd-service-with-logging">Systemd Service with Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#docker-container-example">Docker Container Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#troubleshooting-examples">Troubleshooting Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#test-serial-port-access">Test Serial Port Access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#verify-tcp-connection">Verify TCP Connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#debug-packet-flow">Debug Packet Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#performance-testing">Performance Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#throughput-test">Throughput Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#stress-test">Stress Test</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#quick-reference">Quick Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#common-command-patterns">Common Command Patterns</a></li>
+<li class="toctree-l3"><a class="reference internal" href="examples.html#port-and-baud-rate-combinations">Port and Baud Rate Combinations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Technical Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="kiss_protocol.html">KISS Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#history">History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#protocol-specification">Protocol Specification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#special-characters">Special Characters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#frame-structure">Frame Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#command-byte-format">Command Byte Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#kiss-commands">KISS Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#escaping-rules">Escaping Rules</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#frame-examples">Frame Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#data-frame-port-0">Data Frame (Port 0)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#set-tx-delay">Set TX Delay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#set-persistence">Set Persistence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#exit-kiss-mode">Exit KISS Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#data-frame-with-escaping">Data Frame with Escaping</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#implementation-in-rax25kb">Implementation in rax25kb</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#frame-reception">Frame Reception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#frame-parsing">Frame Parsing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#escape-sequence-handling">Escape Sequence Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#multi-port-support">Multi-Port Support</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#common-issues">Common Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#missing-escape-sequences">Missing Escape Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#incorrect-frame-delimiters">Incorrect Frame Delimiters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#timing-issues">Timing Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#persistence-algorithm">Persistence Algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#protocol-limitations">Protocol Limitations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#no-error-detection">No Error Detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#no-flow-control">No Flow Control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#no-acknowledgments">No Acknowledgments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#single-direction">Single Direction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#kiss-vs-other-tnc-modes">KISS vs Other TNC Modes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#command-mode">Command Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#kiss-vs-smack">KISS vs SMACK</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#kiss-vs-6pack">KISS vs 6PACK</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#testing-and-debugging">Testing and Debugging</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#frame-capture">Frame Capture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#parse-kiss-frames">Parse KISS Frames</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#manual-frame-construction">Manual Frame Construction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#references">References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#specifications">Specifications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#related-standards">Related Standards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kiss_protocol.html#further-reading">Further Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kiss_protocol.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">AX.25 Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#history">History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#protocol-layer">Protocol Layer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#frame-structure">Frame Structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-frame-format">Basic Frame Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#address-field">Address Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#control-field">Control Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#protocol-id-pid">Protocol ID (PID)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#frame-types">Frame Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#i-frames-information">I-Frames (Information)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#s-frames-supervisory">S-Frames (Supervisory)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#u-frames-unnumbered">U-Frames (Unnumbered)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ui-frames">UI-Frames</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#connection-phases">Connection Phases</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#disconnected-phase">Disconnected Phase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setup-phase">Setup Phase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connected-phase">Connected Phase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#disconnect-phase">Disconnect Phase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-recovery">Error Recovery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#digipeating">Digipeating</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#digipeater-path">Digipeater Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#h-bit-has-been-repeated">H-Bit (Has-Been-Repeated)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#path-examples">Path Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#aprs-and-ax-25">APRS and AX.25</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ax-25-in-rax25kb">AX.25 in rax25kb</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#frame-parsing">Frame Parsing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#address-decoding">Address Decoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frame-type-detection">Frame Type Detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#information-field-display">Information Field Display</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#practical-examples">Practical Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#beacon-frame">Beacon Frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#message-frame">Message Frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#position-with-timestamp">Position with Timestamp</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-considerations">Performance Considerations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#frame-size">Frame Size</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#throughput">Throughput</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#latency">Latency</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="philflag.html">PhilFlag Correction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#the-problem">The Problem</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#tasco-modem-chipset-bug">TASCO Modem Chipset Bug</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#kiss-protocol-background">KISS Protocol Background</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#the-solution">The Solution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#serial-to-tcp-direction-receive">Serial to TCP Direction (Receive)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#tcp-to-serial-direction-transmit">TCP to Serial Direction (Transmit)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#implementation-details">Implementation Details</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#code-structure">Code Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#frame-processing-flow">Frame Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#enabling-philflag">Enabling PhilFlag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#when-to-use-philflag">When to Use PhilFlag</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#testing-philflag">Testing PhilFlag</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#performance-impact">Performance Impact</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#processing-overhead">Processing Overhead</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#throughput-impact">Throughput Impact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#latency-impact">Latency Impact</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#limitations">Limitations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#what-philflag-does-not-fix">What PhilFlag Does NOT Fix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#compatibility">Compatibility</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#debugging-philflag">Debugging PhilFlag</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#diagnostic-commands">Diagnostic Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#analyzing-results">Analyzing Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#philflag-not-working">PhilFlag Not Working</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#false-positives">False Positives</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="philflag.html#technical-references">Technical References</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#kiss-protocol-specification">KISS Protocol Specification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#tasco-modem-information">TASCO Modem Information</a></li>
+<li class="toctree-l3"><a class="reference internal" href="philflag.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#general-questions">General Questions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-is-rax25kb">What is rax25kb?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-would-i-use-rax25kb">Why would I use rax25kb?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-does-kiss-mean">What does “KISS” mean?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#is-rax25kb-free">Is rax25kb free?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#installation-and-setup">Installation and Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-operating-systems-are-supported">What operating systems are supported?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#do-i-need-to-install-rust">Do I need to install Rust?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-find-my-serial-port-name">How do I find my serial port name?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-do-i-get-permission-denied-on-linux">Why do I get “Permission denied” on Linux?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#configuration">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-baud-rate-should-i-use">What baud rate should I use?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#should-i-use-flow-control">Should I use flow control?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-s-the-correct-serial-format">What’s the correct serial format?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-tcp-port-should-i-use">What TCP port should I use?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#should-i-bind-to-0-0-0-0-or-127-0-0-1">Should I bind to 0.0.0.0 or 127.0.0.1?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-test-if-rax25kb-is-working">How do I test if rax25kb is working?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-multiple-applications-connect-simultaneously">Can multiple applications connect simultaneously?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-see-what-packets-are-being-received">How do I see what packets are being received?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-aren-t-packets-showing-up-in-my-aprs-software">Why aren’t packets showing up in my APRS software?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-put-my-tnc-in-kiss-mode">How do I put my TNC in KISS mode?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#philflag">PhilFlag</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-is-philflag">What is PhilFlag?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#when-should-i-enable-philflag">When should I enable PhilFlag?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-know-if-i-need-philflag">How do I know if I need PhilFlag?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#does-philflag-slow-down-performance">Does PhilFlag slow down performance?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#windows-specific">Windows-Specific</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-can-t-windows-find-my-com-port">Why can’t Windows find my COM port?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-run-rax25kb-as-a-windows-service">How do I run rax25kb as a Windows service?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-i-use-rax25kb-with-aprsis32">Can I use rax25kb with APRSIS32?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-configure-windows-firewall">How do I configure Windows Firewall?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-do-i-get-failed-to-open-serial-port">Why do I get “Failed to open serial port”?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-does-the-connection-keep-dropping">Why does the connection keep dropping?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-enable-debug-logging">How do I enable debug logging?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-are-my-packets-corrupted">Why are my packets corrupted?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-capture-packets-for-analysis">How do I capture packets for analysis?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#performance">Performance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-much-cpu-does-rax25kb-use">How much CPU does rax25kb use?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-rax25kb-handle-high-speed-data">Can rax25kb handle high-speed data?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-s-the-maximum-throughput">What’s the maximum throughput?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#integration">Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-i-use-rax25kb-with-direwolf">Can I use rax25kb with Direwolf?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#does-rax25kb-work-with-aprs-is">Does rax25kb work with APRS-IS?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-i-chain-multiple-rax25kb-instances">Can I chain multiple rax25kb instances?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#does-rax25kb-support-multi-port-tncs">Does rax25kb support multi-port TNCs?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#development">Development</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-build-from-source">How do I build from source?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#is-there-an-api">Is there an API?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#can-i-contribute">Can I contribute?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#where-do-i-report-bugs">Where do I report bugs?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#support">Support</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#where-can-i-get-help">Where can I get help?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#is-there-commercial-support">Is there commercial support?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-do-i-contact-the-developers">How do I contact the developers?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#still-have-questions">Still Have Questions?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#serial-port-issues">Serial Port Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#cannot-open-serial-port">Cannot Open Serial Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#serial-port-not-found">Serial Port Not Found</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#port-already-in-use">Port Already in Use</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#tcp-network-issues">TCP/Network Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#cannot-bind-to-tcp-port">Cannot Bind to TCP Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#connection-refused">Connection Refused</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#cannot-connect-remotely">Cannot Connect Remotely</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#connection-drops">Connection Drops</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#data-packet-issues">Data/Packet Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#no-packets-received">No Packets Received</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#corrupted-packets">Corrupted Packets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#partial-packets">Partial Packets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#duplicate-packets">Duplicate Packets</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#tnc-issues">TNC Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#tnc-not-in-kiss-mode">TNC Not in KISS Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#tnc-not-responding">TNC Not Responding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#cannot-exit-kiss-mode">Cannot Exit KISS Mode</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#performance-issues">Performance Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#high-cpu-usage">High CPU Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#high-memory-usage">High Memory Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#slow-performance">Slow Performance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#application-integration-issues">Application Integration Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#aprs-software-not-receiving-data">APRS Software Not Receiving Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#direwolf-integration-issues">Direwolf Integration Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#xastir-connection-problems">Xastir Connection Problems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#diagnostic-tools">Diagnostic Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#enable-full-debugging">Enable Full Debugging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#test-serial-port">Test Serial Port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#test-tcp-connection">Test TCP Connection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#monitor-packets-in-real-time">Monitor Packets in Real-Time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#capture-for-later-analysis">Capture for Later Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#common-error-messages">Common Error Messages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#configuration-file-not-found">“Configuration file not found”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#failed-to-create-log-file">“Failed to create log file”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#invalid-baud-rate">“Invalid baud rate”</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#getting-help">Getting Help</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#before-asking-for-help">Before Asking for Help</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#information-to-provide">Information to Provide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="troubleshooting.html#where-to-get-help">Where to Get Help</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rax25kb</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>AX.25 Protocol</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ax25_protocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ax-25-protocol">
+<h1>AX.25 Protocol<a class="headerlink" href="#ax-25-protocol" title="Permalink to this headline"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline"></a></h2>
+<p>AX.25 (Amateur X.25) is a data link layer protocol derived from X.25 and specifically designed for amateur radio use. It provides reliable, connection-oriented or connectionless packet transmission over radio frequencies.</p>
+</section>
+<section id="history">
+<h2>History<a class="headerlink" href="#history" title="Permalink to this headline"></a></h2>
+<p>AX.25 was developed in the 1980s based on the X.25 protocol stack, adapted for the unique characteristics of amateur radio:</p>
+<ul class="simple">
+<li><p>Half-duplex operation</p></li>
+<li><p>Variable propagation delays</p></li>
+<li><p>Shared channel access</p></li>
+<li><p>No guaranteed data rates</p></li>
+</ul>
+<p><strong>Versions:</strong></p>
+<ul class="simple">
+<li><p>AX.25 v2.0 (1984) - Original specification</p></li>
+<li><p>AX.25 v2.2 (1997) - Current standard, adds improvements</p></li>
+</ul>
+</section>
+<section id="protocol-layer">
+<h2>Protocol Layer<a class="headerlink" href="#protocol-layer" title="Permalink to this headline"></a></h2>
+<p>AX.25 operates at the Data Link Layer (Layer 2) of the OSI model:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>+------------------------+
+|    Application Layer   |  (APRS, NET/ROM, etc.)
++------------------------+
+|    Network Layer       |  (NET/ROM, IP)
++------------------------+
+|  AX.25 (Data Link)     |  ← We are here
++------------------------+
+|    Physical Layer      |  (AFSK, FSK, PSK)
++------------------------+
+</pre></div>
+</div>
+</section>
+<section id="frame-structure">
+<h2>Frame Structure<a class="headerlink" href="#frame-structure" title="Permalink to this headline"></a></h2>
+<section id="basic-frame-format">
+<h3>Basic Frame Format<a class="headerlink" href="#basic-frame-format" title="Permalink to this headline"></a></h3>
+<p>An AX.25 frame consists of:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>+------+------+------+-----+------+-----+-----+-----+
+| Flag | Dest | Src  | Digi| Ctrl | PID | Info| FCS |
++------+------+------+-----+------+-----+-----+-----+
+
+Flag:  0x7E (not present in KISS)
+Dest:  Destination address (7 bytes)
+Src:   Source address (7 bytes)
+Digi:  Digipeater addresses (0-8, 7 bytes each)
+Ctrl:  Control field (1 or 2 bytes)
+PID:   Protocol ID (1 byte, optional)
+Info:  Information field (0-256 bytes)
+FCS:   Frame Check Sequence (2 bytes, not in KISS)
+</pre></div>
+</div>
+</section>
+<section id="address-field">
+<h3>Address Field<a class="headerlink" href="#address-field" title="Permalink to this headline"></a></h3>
+<p>Each address is 7 bytes:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Bytes 0-5: Callsign (6 characters, ASCII shifted left 1 bit)
+Byte 6:    SSID and flags
+
+SSID Byte Format:
+Bit 7 6 5 4 3 2 1 0
+    C R R SSID  H/L
+
+C:    Command/Response bit
+R:    Reserved (set to 1)
+SSID: Station identifier (0-15)
+H/L:  Address extension bit (0=more addresses, 1=last)
+</pre></div>
+</div>
+<p><strong>Example: KE4AHR-7</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Byte 0: &#39;K&#39; &lt;&lt; 1 = 0x96
+Byte 1: &#39;E&#39; &lt;&lt; 1 = 0x8A
+Byte 2: &#39;4&#39; &lt;&lt; 1 = 0x68
+Byte 3: &#39;A&#39; &lt;&lt; 1 = 0x82
+Byte 4: &#39;H&#39; &lt;&lt; 1 = 0x90
+Byte 5: &#39;R&#39; &lt;&lt; 1 = 0xA4
+Byte 6: (7 &lt;&lt; 1) | 0x61 = 0xEF (SSID=7, last address)
+</pre></div>
+</div>
+</section>
+<section id="control-field">
+<h3>Control Field<a class="headerlink" href="#control-field" title="Permalink to this headline"></a></h3>
+<p>The control field identifies the frame type:</p>
+<p><strong>I-Frame (Information):</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Bit: 7 6 5 4 3 2 1 0
+     N(R)     P N(S)  0
+
+N(S): Send sequence number
+N(R): Receive sequence number
+P:    Poll bit
+</pre></div>
+</div>
+<p><strong>S-Frame (Supervisory):</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Bit: 7 6 5 4 3 2 1 0
+     N(R)     P/F S S 0 1
+
+N(R): Receive sequence number
+P/F:  Poll/Final bit
+S S:  Supervisory function (00=RR, 01=RNR, 10=REJ, 11=SREJ)
+</pre></div>
+</div>
+<p><strong>U-Frame (Unnumbered):</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Bit: 7 6 5 4 3 2 1 0
+     M M M P/F M M 1 1
+
+M:    Mode bits (define command type)
+P/F:  Poll/Final bit
+</pre></div>
+</div>
+</section>
+<section id="protocol-id-pid">
+<h3>Protocol ID (PID)<a class="headerlink" href="#protocol-id-pid" title="Permalink to this headline"></a></h3>
+<p>Present in I-frames and UI-frames:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>PID</p></th>
+<th class="head"><p>Protocol</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0x01</p></td>
+<td><p>ISO 8208/CCITT X.25 PLP</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x06</p></td>
+<td><p>Compressed TCP/IP</p></td>
+</tr>
+<tr class="row-even"><td><p>0x07</p></td>
+<td><p>Uncompressed TCP/IP</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x08</p></td>
+<td><p>Segmentation fragment</p></td>
+</tr>
+<tr class="row-even"><td><p>0xC3</p></td>
+<td><p>TEXNET datagram</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xC4</p></td>
+<td><p>Link Quality Protocol</p></td>
+</tr>
+<tr class="row-even"><td><p>0xCA</p></td>
+<td><p>Appletalk</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xCB</p></td>
+<td><p>Appletalk ARP</p></td>
+</tr>
+<tr class="row-even"><td><p>0xCC</p></td>
+<td><p>ARPA Internet Protocol</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xCD</p></td>
+<td><p>ARPA Address Resolution</p></td>
+</tr>
+<tr class="row-even"><td><p>0xCE</p></td>
+<td><p>FlexNet</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xCF</p></td>
+<td><p>NET/ROM</p></td>
+</tr>
+<tr class="row-even"><td><p>0xF0</p></td>
+<td><p>No layer 3 (used by APRS)</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xFF</p></td>
+<td><p>Escape character</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="frame-types">
+<h2>Frame Types<a class="headerlink" href="#frame-types" title="Permalink to this headline"></a></h2>
+<section id="i-frames-information">
+<h3>I-Frames (Information)<a class="headerlink" href="#i-frames-information" title="Permalink to this headline"></a></h3>
+<p><strong>Purpose:</strong> Transfer data in connected mode</p>
+<p><strong>Characteristics:</strong></p>
+<ul class="simple">
+<li><p>Contains sequence numbers</p></li>
+<li><p>Requires acknowledgment</p></li>
+<li><p>Supports flow control</p></li>
+<li><p>Error recovery via retransmission</p></li>
+</ul>
+<p><strong>Example use:</strong> File transfer, terminal connections</p>
+</section>
+<section id="s-frames-supervisory">
+<h3>S-Frames (Supervisory)<a class="headerlink" href="#s-frames-supervisory" title="Permalink to this headline"></a></h3>
+<p><strong>Types:</strong></p>
+<ul class="simple">
+<li><p><strong>RR (Receive Ready)</strong> - Ready to receive, acknowledges frames</p></li>
+<li><p><strong>RNR (Receive Not Ready)</strong> - Busy, can’t receive now</p></li>
+<li><p><strong>REJ (Reject)</strong> - Request retransmission from N(R)</p></li>
+<li><p><strong>SREJ (Selective Reject)</strong> - Request specific frame retransmission</p></li>
+</ul>
+<p><strong>Purpose:</strong> Flow control and error recovery in connected mode</p>
+</section>
+<section id="u-frames-unnumbered">
+<h3>U-Frames (Unnumbered)<a class="headerlink" href="#u-frames-unnumbered" title="Permalink to this headline"></a></h3>
+<p><strong>Common types:</strong></p>
+<ul class="simple">
+<li><p><strong>SABM (Set Asynchronous Balanced Mode)</strong> - Establish connection</p></li>
+<li><p><strong>SABME</strong> - SABM with extended sequence numbers</p></li>
+<li><p><strong>DISC (Disconnect)</strong> - Close connection</p></li>
+<li><p><strong>DM (Disconnected Mode)</strong> - Not connected response</p></li>
+<li><p><strong>UA (Unnumbered Acknowledgment)</strong> - Acknowledge U-frame</p></li>
+<li><p><strong>FRMR (Frame Reject)</strong> - Report protocol error</p></li>
+<li><p><strong>UI (Unnumbered Information)</strong> - Connectionless data transfer</p></li>
+</ul>
+</section>
+<section id="ui-frames">
+<h3>UI-Frames<a class="headerlink" href="#ui-frames" title="Permalink to this headline"></a></h3>
+<p><strong>Special case:</strong> Unnumbered Information frame</p>
+<p><strong>Characteristics:</strong></p>
+<ul class="simple">
+<li><p>Connectionless (no SABM required)</p></li>
+<li><p>No acknowledgment</p></li>
+<li><p>No sequence numbers</p></li>
+<li><p>No retransmission</p></li>
+<li><p>Contains PID and information field</p></li>
+</ul>
+<p><strong>Used by:</strong> APRS, beacons, bulletins</p>
+</section>
+</section>
+<section id="connection-phases">
+<h2>Connection Phases<a class="headerlink" href="#connection-phases" title="Permalink to this headline"></a></h2>
+<section id="disconnected-phase">
+<h3>Disconnected Phase<a class="headerlink" href="#disconnected-phase" title="Permalink to this headline"></a></h3>
+<p>Initial state, no connection established.</p>
+<p><strong>Transitions:</strong></p>
+<ul class="simple">
+<li><p>Send SABM → Setup Phase</p></li>
+<li><p>Receive UI → Process connectionless data</p></li>
+</ul>
+</section>
+<section id="setup-phase">
+<h3>Setup Phase<a class="headerlink" href="#setup-phase" title="Permalink to this headline"></a></h3>
+<p>Establishing connection.</p>
+<p><strong>Process:</strong></p>
+<ol class="arabic simple">
+<li><p>Station A sends SABM to Station B</p></li>
+<li><p>Station B responds with UA</p></li>
+<li><p>Connection established → Connected Phase</p></li>
+</ol>
+<p><strong>Commands:</strong></p>
+<ul class="simple">
+<li><p>SABM - Request connection</p></li>
+<li><p>SABME - Request connection with extended mode</p></li>
+<li><p>UA - Accept connection</p></li>
+<li><p>DM - Reject connection</p></li>
+</ul>
+</section>
+<section id="connected-phase">
+<h3>Connected Phase<a class="headerlink" href="#connected-phase" title="Permalink to this headline"></a></h3>
+<p>Data transfer with reliability.</p>
+<p><strong>Operations:</strong></p>
+<ul class="simple">
+<li><p>Send I-frames with data</p></li>
+<li><p>Receive acknowledgments (RR)</p></li>
+<li><p>Handle flow control (RNR)</p></li>
+<li><p>Retransmit on timeout or REJ</p></li>
+</ul>
+<p><strong>Characteristics:</strong></p>
+<ul class="simple">
+<li><p>Sequence numbers track frames</p></li>
+<li><p>Acknowledgments ensure delivery</p></li>
+<li><p>Timeouts trigger retransmission</p></li>
+</ul>
+</section>
+<section id="disconnect-phase">
+<h3>Disconnect Phase<a class="headerlink" href="#disconnect-phase" title="Permalink to this headline"></a></h3>
+<p>Closing connection.</p>
+<p><strong>Process:</strong></p>
+<ol class="arabic simple">
+<li><p>Station sends DISC</p></li>
+<li><p>Other station responds with UA</p></li>
+<li><p>Return to Disconnected Phase</p></li>
+</ol>
+</section>
+<section id="error-recovery">
+<h3>Error Recovery<a class="headerlink" href="#error-recovery" title="Permalink to this headline"></a></h3>
+<p><strong>Timeout:</strong> Retransmit unacknowledged frames</p>
+<p><strong>REJ:</strong> Retransmit from specified sequence number</p>
+<p><strong>FRMR:</strong> Report protocol violation, disconnect</p>
+</section>
+</section>
+<section id="digipeating">
+<h2>Digipeating<a class="headerlink" href="#digipeating" title="Permalink to this headline"></a></h2>
+<section id="digipeater-path">
+<h3>Digipeater Path<a class="headerlink" href="#digipeater-path" title="Permalink to this headline"></a></h3>
+<p>AX.25 supports up to 8 digipeater addresses:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Source → DIGI1 → DIGI2 → DIGI3 → Destination
+</pre></div>
+</div>
+<p><strong>Address format:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Src: KE4AHR-7
+Digi 1: WIDE1-1 (not repeated yet)
+Digi 2: WIDE2-1 (not repeated yet)
+Dest: APRS
+</pre></div>
+</div>
+</section>
+<section id="h-bit-has-been-repeated">
+<h3>H-Bit (Has-Been-Repeated)<a class="headerlink" href="#h-bit-has-been-repeated" title="Permalink to this headline"></a></h3>
+<p>Bit 7 of SSID byte indicates if digipeater has repeated:</p>
+<ul class="simple">
+<li><p>0 = Not repeated yet</p></li>
+<li><p>1 = Already repeated</p></li>
+</ul>
+<p><strong>Example progression:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Original:  WIDE1-1 (H=0), WIDE2-1 (H=0)
+After #1:  WIDE1-1 (H=1), WIDE2-1 (H=0)
+After #2:  WIDE1-1 (H=1), WIDE2-1 (H=1)
+</pre></div>
+</div>
+</section>
+<section id="path-examples">
+<h3>Path Examples<a class="headerlink" href="#path-examples" title="Permalink to this headline"></a></h3>
+<p><strong>Direct:</strong> No digipeaters</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>KE4AHR-7 → KE4AHR-1
+</pre></div>
+</div>
+<p><strong>Single hop:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>KE4AHR-7 → WIDE1-1 → APRS
+</pre></div>
+</div>
+<p><strong>Multi-hop:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>KE4AHR-7 → WIDE1-1,WIDE2-1 → APRS
+</pre></div>
+</div>
+<p><strong>New paradigm:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>KE4AHR-7 → WIDE1-1,WIDE2-2 → APRS
+</pre></div>
+</div>
+</section>
+</section>
+<section id="aprs-and-ax-25">
+<h2>APRS and AX.25<a class="headerlink" href="#aprs-and-ax-25" title="Permalink to this headline"></a></h2>
+<p>APRS uses AX.25 UI frames:</p>
+<p><strong>Frame structure:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Dest: APRS (or version-specific like APNU3F)
+Src: Station callsign with SSID
+Digi: Path (e.g., WIDE1-1,WIDE2-1)
+Ctrl: 0x03 (UI frame)
+PID: 0xF0 (no layer 3)
+Info: APRS data (position, weather, etc.)
+</pre></div>
+</div>
+<p><strong>APRS data types:</strong></p>
+<ul class="simple">
+<li><p>Position reports (<code class="docutils literal notranslate"><span class="pre">!</span></code>, <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;</span></code>)</p></li>
+<li><p>Status (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>)</p></li>
+<li><p>Messages (<code class="docutils literal notranslate"><span class="pre">:</span></code>)</p></li>
+<li><p>Weather (<code class="docutils literal notranslate"><span class="pre">_</span></code>)</p></li>
+<li><p>Telemetry (<code class="docutils literal notranslate"><span class="pre">T</span></code>)</p></li>
+<li><p>Objects (<code class="docutils literal notranslate"><span class="pre">;</span></code>)</p></li>
+</ul>
+</section>
+<section id="ax-25-in-rax25kb">
+<h2>AX.25 in rax25kb<a class="headerlink" href="#ax-25-in-rax25kb" title="Permalink to this headline"></a></h2>
+<section id="frame-parsing">
+<h3>Frame Parsing<a class="headerlink" href="#frame-parsing" title="Permalink to this headline"></a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">-k</span></code> is enabled, rax25kb parses AX.25 headers:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>=== TNC -&gt; PC KISS Frame ===
+  Port: 0, Command: 0 (Data)
+  Frame length: 45 bytes
+  AX.25: KE4AHR-7 &gt; APRS
+  Via: WIDE1-1, WIDE2-1
+  Type: UIFrame
+  Phase: UNCONNECTED (UI Frame)
+  Control: 0x03
+  PID: 0xf0
+  Info: 29 bytes
+</pre></div>
+</div>
+</section>
+<section id="address-decoding">
+<h3>Address Decoding<a class="headerlink" href="#address-decoding" title="Permalink to this headline"></a></h3>
+<p>rax25kb extracts callsigns and SSIDs:</p>
+<div class="highlight-rust notranslate"><div class="highlight"><pre><span></span><span class="k">fn</span> <span class="nf">from_ax25_bytes</span><span class="p">(</span><span class="n">bytes</span>: <span class="kp">&amp;</span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;</span><span class="n">AX25Address</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">callsign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span>::<span class="n">new</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">0</span><span class="o">..</span><span class="mi">6</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">char</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">ch</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">callsign</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">ch</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">ssid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x0F</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="nb">Some</span><span class="p">(</span><span class="n">AX25Address</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">callsign</span><span class="p">,</span><span class="w"> </span><span class="n">ssid</span><span class="w"> </span><span class="p">})</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="frame-type-detection">
+<h3>Frame Type Detection<a class="headerlink" href="#frame-type-detection" title="Permalink to this headline"></a></h3>
+<p>rax25kb identifies frame types:</p>
+<div class="highlight-rust notranslate"><div class="highlight"><pre><span></span><span class="k">fn</span> <span class="nf">get_frame_type</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">AX25FrameType</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">control</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x01</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">IFrame</span><span class="w">  </span><span class="c1">// Bit 0 = 0</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">control</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x03</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x01</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">SFrame</span><span class="w">  </span><span class="c1">// Bits 1-0 = 01</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">control</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0x03</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x03</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">control</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mh">0xEF</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mh">0x03</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">UIFrame</span><span class="w">  </span><span class="c1">// UI specific</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">            </span><span class="n">UFrame</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">Unknown</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="information-field-display">
+<h3>Information Field Display<a class="headerlink" href="#information-field-display" title="Permalink to this headline"></a></h3>
+<p>With <code class="docutils literal notranslate"><span class="pre">-a</span></code>, rax25kb shows info field contents:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>=== TNC -&gt; PC AX.25 Info Field (29 bytes) ===
+00000000: 21 34 32 30 34 2e 33 35  4e 2f 30 38 33 35 34 2e  !4204.35N/08354.
+00000010: 34 38 57 2d 50 48 47 20  32 31 35 30 2f           48W-PHG 2150/
+</pre></div>
+</div>
+</section>
+</section>
+<section id="practical-examples">
+<h2>Practical Examples<a class="headerlink" href="#practical-examples" title="Permalink to this headline"></a></h2>
+<section id="beacon-frame">
+<h3>Beacon Frame<a class="headerlink" href="#beacon-frame" title="Permalink to this headline"></a></h3>
+<p><strong>Raw AX.25:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Dest:  APRS (0x82 0xA0 0xA6 0xA0 0x40 0x40 0xE0)
+Src:   KE4AHR-7 (0x96 0x8A 0x68 0x82 0x90 0xA4 0xEF)
+Ctrl:  0x03 (UI)
+PID:   0xF0 (No L3)
+Info:  !4204.35N/08354.48W-PHG 2150/
+</pre></div>
+</div>
+<p><strong>KISS encapsulated:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>C0 00 82 A0 A6 A0 40 40 E0 96 8A 68 82 90 A4 EF
+03 F0 21 34 32 30 34 2E 33 35 4E 2F 30 38 33 35
+34 2E 34 38 57 2D 50 48 47 20 32 31 35 30 2F C0
+</pre></div>
+</div>
+</section>
+<section id="message-frame">
+<h3>Message Frame<a class="headerlink" href="#message-frame" title="Permalink to this headline"></a></h3>
+<p><strong>APRS message:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>:KE4AHR   :Test message{001
+</pre></div>
+</div>
+<p><strong>Complete frame:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Dest:  APRS
+Src:   KE4AHR-1
+Path:  WIDE1-1
+Ctrl:  0x03
+PID:   0xF0
+Info:  :KE4AHR   :Test message{001
+</pre></div>
+</div>
+</section>
+<section id="position-with-timestamp">
+<h3>Position with Timestamp<a class="headerlink" href="#position-with-timestamp" title="Permalink to this headline"></a></h3>
+<p><strong>APRS format:</strong></p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>@221234z4204.35N/08354.48W&gt;
+</pre></div>
+</div>
+<p><strong>Fields:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&#64;</span></code> - Position with timestamp</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">221234z</span></code> - Day 22, time 12:34 UTC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">4204.35N/08354.48W</span></code> - Coordinates</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&gt;</span></code> - Symbol (car)</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permalink to this headline"></a></h2>
+<section id="frame-size">
+<h3>Frame Size<a class="headerlink" href="#frame-size" title="Permalink to this headline"></a></h3>
+<p><strong>Typical sizes:</strong></p>
+<ul class="simple">
+<li><p>Minimum: 16 bytes (header only)</p></li>
+<li><p>APRS position: 40-60 bytes</p></li>
+<li><p>APRS message: 50-80 bytes</p></li>
+<li><p>Maximum: ~330 bytes (with digipeaters and full info)</p></li>
+</ul>
+</section>
+<section id="throughput">
+<h3>Throughput<a class="headerlink" href="#throughput" title="Permalink to this headline"></a></h3>
+<p><strong>1200 baud VHF:</strong></p>
+<ul class="simple">
+<li><p>Raw: 150 bytes/sec</p></li>
+<li><p>With overhead: ~100 bytes/sec effective</p></li>
+<li><p>Typical APRS beacon: 2-3 frames/sec max</p></li>
+</ul>
+<p><strong>9600 baud:</strong></p>
+<ul class="simple">
+<li><p>Raw: 1200 bytes/sec</p></li>
+<li><p>With overhead: ~800 bytes/sec effective</p></li>
+</ul>
+</section>
+<section id="latency">
+<h3>Latency<a class="headerlink" href="#latency" title="Permalink to this headline"></a></h3>
+<p><strong>Components:</strong></p>
+<ul class="simple">
+<li><p>CSMA delay (persistence): 0-1000ms</p></li>
+<li><p>TX delay: 50-500ms</p></li>
+<li><p>Transmission time: (bytes * 8) / baud</p></li>
+<li><p>Propagation: negligible on VHF/UHF</p></li>
+</ul>
+<p><strong>Example (60 byte frame &#64; 1200 baud):</strong></p>
+<ul class="simple">
+<li><p>Transmission: 400ms</p></li>
+<li><p>Total: 500-1500ms typical</p></li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>AX.25 v2.2 Specification: <a class="reference external" href="https://www.tapr.org/pdf/AX25.2.2.pdf">https://www.tapr.org/pdf/AX25.2.2.pdf</a></p></li>
+<li><p>APRS Protocol Reference: <a class="reference external" href="http://www.aprs.org/doc/APRS101.PDF">http://www.aprs.org/doc/APRS101.PDF</a></p></li>
+<li><p>TAPR: <a class="reference external" href="https://www.tapr.org/">https://www.tapr.org/</a></p></li>
+<li><p>Tucson Amateur Packet Radio: <a class="reference external" href="http://www.tapr.org/pr_intro.html">http://www.tapr.org/pr_intro.html</a></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="kiss_protocol.html"><span class="doc">KISS Protocol</span></a> - KISS protocol details</p></li>
+<li><p><a class="reference internal" href="examples.html"><span class="doc">Examples</span></a> - Practical examples</p></li>
+<li><p><a class="reference internal" href="philflag.html"><span class="doc">PhilFlag Correction</span></a> - Frame escaping corrections</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="kiss_protocol.html" class="btn btn-neutral float-left" title="KISS Protocol" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="philflag.html" class="btn btn-neutral float-right" title="PhilFlag Correction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kris Kirby, KE4AHR.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
