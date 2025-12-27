@@ -1,5 +1,5 @@
 // rax25kb - AX.25 KISS Bridge with Multi-Port Cross-Connect Support
-// Version 2.0.0
+// Version 1.6.3
 //
 // Copyright (C) 2025 Kris Kirby, KE4AHR
 //
@@ -44,170 +44,126 @@
 // STANDARD LIBRARY IMPORTS
 // ==============================================================================
 
-use std::collections::HashMap;      // For storing serial port and config maps
-use std::fs::{self, File, OpenOptions}; // File system operations
-use std::io::{Read, Write};         // I/O traits for reading/writing
-use std::net::{TcpListener, TcpStream}; // TCP networking
-use std::sync::{Arc, Mutex};        // Thread-safe reference counting and locking
-use std::thread;                    // Threading support
-use std::time::Duration;            // Time duration for timeouts
-use std::process;                   // Process control (exit, pid)
+use std::collections::HashMap;
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use std::process;
 
 // ==============================================================================
 // KISS PROTOCOL CONSTANTS
 // ==============================================================================
-// KISS (Keep It Simple Stupid) is a protocol for communicating with TNCs
-// (Terminal Node Controllers) over serial connections.
-//
-// Frame format: FEND [port+cmd] [data] FEND
-// Where:
-//   FEND = Frame End marker (0xC0)
-//   port+cmd = 4-bit port number (upper nibble) + 4-bit command (lower nibble)
-//   data = Actual packet data (may contain escaped bytes)
-//
-// Byte stuffing:
-//   FEND in data -> FESC TFEND (0xDB 0xDC)
-//   FESC in data -> FESC TFESC (0xDB 0xDD)
 
-const KISS_FEND: u8 = 0xC0;         // Frame End - marks start/end of frame
-const KISS_FESC: u8 = 0xDB;         // Frame Escape - escape sequence marker
-const KISS_TFEND: u8 = 0xDC;        // Transposed Frame End - escaped FEND
+const KISS_FEND: u8 = 0xC0;
+const KISS_FESC: u8 = 0xDB;
+const KISS_TFEND: u8 = 0xDC;
 #[allow(dead_code)]
-const KISS_TFESC: u8 = 0xDD;        // Transposed Frame Escape - escaped FESC
+const KISS_TFESC: u8 = 0xDD;
 
 // ==============================================================================
 // CONFIGURATION STRUCTURES
 // ==============================================================================
 
-/// Flow control types for serial ports
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum FlowControl {
-    None,      // No flow control (most common)
-    Software,  // XON/XOFF software flow control
-    Hardware,  // RTS/CTS hardware flow control
-    DtrDsr,    // DTR/DSR flow control (primarily Windows)
+    None,
+    Software,
+    Hardware,
+    DtrDsr,
 }
 
-/// Number of stop bits for serial communication
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum StopBits {
-    One,       // 1 stop bit (most common)
-    Two,       // 2 stop bits (e.g., Kenwood TS-2000)
+    One,
+    Two,
 }
 
-/// Parity checking for serial communication
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Parity {
-    None,      // No parity (most common - 8N1)
-    Odd,       // Odd parity
-    Even,      // Even parity
+    None,
+    Odd,
+    Even,
 }
 
-/// Represents an endpoint in a cross-connect
-/// Can be either a TCP socket or a serial port with KISS port number
 #[derive(Debug, Clone, PartialEq)]
 enum CrossConnectEndpoint {
-    /// TCP socket endpoint (server mode - listens for connections)
     TcpSocket {
-        address: String,  // Bind address (0.0.0.0 = all, 127.0.0.1 = localhost)
-        port: u16,        // TCP port number
+        address: String,
+        port: u16,
     },
-    /// Serial port endpoint with KISS port addressing
     SerialPort {
-        port_id: String,  // ID of the serial port (references serial_portXXXX)
-        kiss_port: u8,    // KISS port number (0-15, most TNCs use 0)
+        port_id: String,
+        kiss_port: u8,
     },
 }
 
-/// Configuration for a single serial port
 #[derive(Debug, Clone)]
 struct SerialPortConfig {
-    id: String,              // Unique 4-digit ID (e.g., "0000", "0001")
-    device: String,          // Device path (/dev/ttyUSB0, COM3, etc.)
-    baud_rate: u32,          // Baud rate (1200, 9600, 115200, etc.)
-    flow_control: FlowControl, // Flow control type
-    stop_bits: StopBits,     // Number of stop bits
-    parity: Parity,          // Parity setting
-    extended_kiss: bool,     // true = Extended KISS, false = Standard KISS
+    id: String,
+    device: String,
+    baud_rate: u32,
+    flow_control: FlowControl,
+    stop_bits: StopBits,
+    parity: Parity,
+    extended_kiss: bool,
 }
 
-/// Configuration for a cross-connect between two endpoints
 #[derive(Debug, Clone)]
 struct CrossConnect {
-    id: String,                     // Unique 4-digit ID (e.g., "0000", "0001")
-    endpoint_a: CrossConnectEndpoint, // First endpoint
-    endpoint_b: CrossConnectEndpoint, // Second endpoint
-    phil_flag: bool,                // Enable PhilFlag correction for buggy TNCs
-    dump_frames: bool,              // Dump frames in hex format
-    parse_kiss: bool,               // Parse and display KISS frames
-    dump_ax25: bool,                // Display AX.25 frame details
-    raw_copy: bool,                 // Raw byte copy mode (no KISS processing)
+    id: String,
+    endpoint_a: CrossConnectEndpoint,
+    endpoint_b: CrossConnectEndpoint,
+    phil_flag: bool,
+    dump_frames: bool,
+    parse_kiss: bool,
+    dump_ax25: bool,
+    raw_copy: bool,
 }
 
-/// Main configuration structure loaded from config file
 #[derive(Debug, Clone)]
 struct Config {
-    serial_ports: HashMap<String, SerialPortConfig>, // All serial port configs
-    cross_connects: Vec<CrossConnect>,               // All cross-connect configs
-    log_level: u8,                                   // Logging verbosity (0-9)
-    logfile: Option<String>,                         // Log file path (optional)
-    pidfile: Option<String>,                         // PID file path (optional)
-    log_to_console: bool,                            // Log to stdout
-    quiet_startup: bool,                             // Suppress startup banner
-    pcap_file: Option<String>,                       // PCAP capture file (optional)
+    serial_ports: HashMap<String, SerialPortConfig>,
+    cross_connects: Vec<CrossConnect>,
+    log_level: u8,
+    logfile: Option<String>,
+    pidfile: Option<String>,
+    log_to_console: bool,
+    quiet_startup: bool,
+    pcap_file: Option<String>,
 }
 
 // ==============================================================================
 // AX.25 PROTOCOL STRUCTURES
 // ==============================================================================
-// AX.25 is the data link layer protocol used in amateur packet radio.
-// It's based on X.25 but adapted for amateur radio use.
-//
-// Frame structure:
-//   [Destination Address (7 bytes)]
-//   [Source Address (7 bytes)]
-//   [Digipeater Addresses (0-8, 7 bytes each)]
-//   [Control (1 byte)]
-//   [PID (0-1 bytes)]
-//   [Information Field (variable)]
-//
-// Address format (7 bytes):
-//   Bytes 0-5: Callsign (left-shifted by 1)
-//   Byte 6: SSID + reserved bits + extension bit
 
-/// AX.25 address structure (callsign + SSID)
 #[derive(Debug)]
 struct AX25Address {
-    callsign: String,  // Station callsign (e.g., "N0CALL")
-    ssid: u8,          // Secondary Station ID (0-15)
+    callsign: String,
+    ssid: u8,
 }
 
 impl AX25Address {
-    /// Parse an AX.25 address from 7 bytes
-    /// 
-    /// AX.25 addresses are encoded with each character shifted left by 1 bit.
-    /// The 7th byte contains the SSID in bits 1-4.
     fn from_ax25_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() < 7 { 
             return None; 
         }
         
-        // Extract callsign from bytes 0-5 (right-shift to get ASCII)
         let mut callsign = String::new();
         for i in 0..6 {
             let ch = (bytes[i] >> 1) as char;
-            if ch != ' ' {  // Skip padding spaces
+            if ch != ' ' {
                 callsign.push(ch); 
             }
         }
         
-        // Extract SSID from byte 6 (bits 1-4)
         let ssid = (bytes[6] >> 1) & 0x0F;
         
         Some(AX25Address { callsign, ssid })
     }
     
-    /// Convert address to string format (e.g., "N0CALL" or "N0CALL-5")
     fn to_string(&self) -> String {
         if self.ssid == 0 { 
             self.callsign.clone() 
@@ -217,50 +173,39 @@ impl AX25Address {
     }
 }
 
-/// Complete AX.25 frame structure
 #[derive(Debug)]
 struct AX25Frame {
-    destination: AX25Address,      // Destination station
-    source: AX25Address,           // Source station
-    digipeaters: Vec<AX25Address>, // Digipeater path (0-8 stations)
-    control: u8,                   // Control byte (frame type, sequence numbers)
-    pid: Option<u8>,               // Protocol ID (present in I and UI frames)
-    info: Vec<u8>,                 // Information field (payload data)
+    destination: AX25Address,
+    source: AX25Address,
+    digipeaters: Vec<AX25Address>,
+    control: u8,
+    pid: Option<u8>,
+    info: Vec<u8>,
 }
 
-/// AX.25 frame types based on control byte
 #[derive(Debug, PartialEq)]
 enum AX25FrameType {
-    IFrame,   // Information frame (bit 0 = 0)
-    SFrame,   // Supervisory frame (bits 0-1 = 01)
-    UFrame,   // Unnumbered frame (bits 0-1 = 11, not UI)
-    UIFrame,  // Unnumbered Information frame (special case)
-    Unknown,  // Unrecognized frame type
+    IFrame,
+    SFrame,
+    UFrame,
+    UIFrame,
+    Unknown,
 }
 
 impl AX25Frame {
-    /// Parse an AX.25 frame from raw bytes
-    /// 
-    /// Returns None if the frame is invalid or too short
     fn parse(data: &[u8]) -> Option<Self> {
-        // Minimum frame: dest(7) + source(7) + control(1) + FCS(2) = 17 bytes
-        // We check for 16 here since FCS might be stripped
         if data.len() < 16 { 
             return None; 
         }
         
         let mut offset = 0;
         
-        // Parse destination address (7 bytes)
         let destination = AX25Address::from_ax25_bytes(&data[offset..offset+7])?;
         offset += 7;
         
-        // Parse source address (7 bytes)
         let source = AX25Address::from_ax25_bytes(&data[offset..offset+7])?;
         offset += 7;
         
-        // Parse digipeater addresses (optional, 0-8 stations)
-        // Continue until we find an address with the extension bit set (bit 0 of byte 6)
         let mut digipeaters = Vec::new();
         while offset + 7 <= data.len() {
             let addr_byte_6 = data[offset + 6];
@@ -268,23 +213,18 @@ impl AX25Frame {
             digipeaters.push(digi);
             offset += 7;
             
-            // Extension bit set means this is the last address
             if addr_byte_6 & 0x01 != 0 { 
                 break; 
             }
         }
         
-        // Ensure we have room for control byte
         if offset >= data.len() { 
             return None; 
         }
         
-        // Parse control byte
         let control = data[offset];
         offset += 1;
         
-        // Parse PID (Protocol ID) if present
-        // PID is present in I-frames (control & 0x01 == 0) and UI-frames (control == 0x03)
         let pid = if (control & 0x03) == 0x00 || (control & 0x03) == 0x03 {
             if offset < data.len() { 
                 let p = data[offset]; 
@@ -297,7 +237,6 @@ impl AX25Frame {
             None 
         };
         
-        // Remaining bytes are the information field
         let info = data[offset..].to_vec();
         
         Some(AX25Frame { 
@@ -310,26 +249,15 @@ impl AX25Frame {
         })
     }
     
-    /// Determine the frame type from the control byte
-    /// 
-    /// Control byte format:
-    ///   I-frame:  N(R) P N(S) 0
-    ///   S-frame:  N(R) P/F S S 0 1
-    ///   U-frame:  M M P/F M M 1 1
     fn get_frame_type(&self) -> AX25FrameType {
         if (self.control & 0x01) == 0 {
-            // Bit 0 = 0: I-frame
             AX25FrameType::IFrame 
         } else if (self.control & 0x03) == 0x01 {
-            // Bits 0-1 = 01: S-frame
             AX25FrameType::SFrame 
         } else if (self.control & 0x03) == 0x03 {
-            // Bits 0-1 = 11: U-frame or UI-frame
             if (self.control & 0xEF) == 0x03 { 
-                // UI frame (special unnumbered information)
                 AX25FrameType::UIFrame 
             } else { 
-                // Other unnumbered frame
                 AX25FrameType::UFrame 
             }
         } else { 
@@ -337,19 +265,17 @@ impl AX25Frame {
         }
     }
     
-    /// Get a human-readable description of the connection phase
     fn get_connection_phase(&self) -> &str {
         match self.get_frame_type() {
             AX25FrameType::IFrame => "CONNECTED (Information Transfer)",
             AX25FrameType::SFrame => "CONNECTED (Supervisory)",
             AX25FrameType::UFrame => {
-                // Decode specific U-frame types
                 match self.control & 0xEF {
-                    0x2F => "SETUP (SABM)",      // Set Asynchronous Balanced Mode
-                    0x63 => "SETUP (SABME)",     // SABM Extended
-                    0x43 => "DISCONNECT (DISC)", // Disconnect
-                    0x0F => "DISCONNECT (DM)",   // Disconnected Mode
-                    0x87 => "ERROR (FRMR)",      // Frame Reject
+                    0x2F => "SETUP (SABM)",
+                    0x63 => "SETUP (SABME)",
+                    0x43 => "DISCONNECT (DISC)",
+                    0x0F => "DISCONNECT (DM)",
+                    0x87 => "ERROR (FRMR)",
                     _ => "CONTROL (Unnumbered)",
                 }
             }
@@ -358,15 +284,12 @@ impl AX25Frame {
         }
     }
     
-    /// Print a human-readable summary of the frame
     fn print_summary(&self) {
-        // Print source -> destination
         println!("  AX.25: {} > {}", 
             self.source.to_string(), 
             self.destination.to_string()
         );
         
-        // Print digipeater path if present
         if !self.digipeaters.is_empty() {
             print!("  Via: ");
             for (i, digi) in self.digipeaters.iter().enumerate() {
@@ -378,29 +301,20 @@ impl AX25Frame {
             println!();
         }
         
-        // Print frame type and phase
         println!("  Type: {:?}", self.get_frame_type());
         println!("  Phase: {}", self.get_connection_phase());
-        
-        // Print control byte
         println!("  Control: 0x{:02x}", self.control);
         
-        // Print PID if present
         if let Some(pid) = self.pid { 
             println!("  PID: 0x{:02x}", pid); 
         }
         
-        // Print info field length
         if !self.info.is_empty() { 
             println!("  Info: {} bytes", self.info.len()); 
         }
     }
 }
-
 // ==============================================================================
-// END OF PART 1
-// ==============================================================================
-// Continue with Part 2: Configuration parsing// ==============================================================================
 // MAIN.RS - PART 2 OF 5
 // ==============================================================================
 //
@@ -411,46 +325,26 @@ impl AX25Frame {
 // - Endpoint parsing and validation
 // - Helper functions for parsing enums and booleans
 //
-// Configuration file format:
-//   key=value format with # comments
-//   serial_portXXXX entries define serial ports
-//   cross_connectXXXX entries define connections
-//   global settings control logging and behavior
-//
 // ==============================================================================
 
 impl Config {
-    /// Load configuration from a file
-    /// 
-    /// File format is simple key=value pairs with optional quotes:
-    ///   key=value
-    ///   key="value with spaces"
-    ///   # comments
-    /// 
-    /// Returns an error if the file cannot be read or parsing fails
     fn from_file(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        // Read the entire configuration file
         let contents = fs::read_to_string(path)
             .map_err(|e| format!("Failed to read config file '{}': {}", path, e))?;
         
-        // Parse into a HashMap for easy lookup
         let mut config_map = HashMap::new();
         
-        // Process each line
         for line in contents.lines() {
             let line = line.trim();
             
-            // Skip empty lines and comments
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
             
-            // Split on first '=' character
             if let Some((key, value)) = line.split_once('=') {
                 let key = key.trim();
                 let mut value = value.trim();
                 
-                // Strip quotes if present
                 if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 {
                     value = &value[1..value.len()-1];
                 }
@@ -459,20 +353,13 @@ impl Config {
             }
         }
         
-        // ==================================================================
-        // PARSE SERIAL PORT CONFIGURATIONS
-        // ==================================================================
-        
         let mut serial_ports = HashMap::new();
         let mut serial_port_ids = Vec::new();
         
-        // Find all serial_portXXXX entries
-        // Look for keys like "serial_port0000", "serial_port0001", etc.
         for key in config_map.keys() {
             if key.starts_with("serial_port") && key.len() > 11 {
                 let id = &key[11..];
                 
-                // Validate ID is exactly 4 digits
                 if id.chars().all(|c| c.is_ascii_digit()) && id.len() == 4 {
                     if !serial_port_ids.contains(&id.to_string()) {
                         serial_port_ids.push(id.to_string());
@@ -481,45 +368,37 @@ impl Config {
             }
         }
         
-        // Parse configuration for each serial port
         for id in &serial_port_ids {
-            // Required: device path
             let device_key = format!("serial_port{}", id);
             let device = config_map.get(&device_key)
                 .ok_or(format!("Missing device for serial port {}", id))?
                 .clone();
             
-            // Optional: baud rate (default 9600)
             let baud_key = format!("serial_port{}_baud", id);
             let baud_rate = config_map.get(&baud_key)
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(9600);
             
-            // Optional: flow control (default none)
             let flow_key = format!("serial_port{}_flow_control", id);
             let flow_control = config_map.get(&flow_key)
                 .and_then(|v| Self::parse_flow_control(v))
                 .unwrap_or(FlowControl::None);
             
-            // Optional: stop bits (default 1)
             let stop_key = format!("serial_port{}_stop_bits", id);
             let stop_bits = config_map.get(&stop_key)
                 .and_then(|v| Self::parse_stop_bits(v))
                 .unwrap_or(StopBits::One);
             
-            // Optional: parity (default none)
             let parity_key = format!("serial_port{}_parity", id);
             let parity = config_map.get(&parity_key)
                 .and_then(|v| Self::parse_parity(v))
                 .unwrap_or(Parity::None);
             
-            // Optional: extended KISS (default false)
             let xkiss_key = format!("serial_port{}_extended_kiss", id);
             let extended_kiss = config_map.get(&xkiss_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Create SerialPortConfig and add to map
             let port_config = SerialPortConfig {
                 id: id.clone(),
                 device,
@@ -533,20 +412,13 @@ impl Config {
             serial_ports.insert(id.clone(), port_config);
         }
         
-        // ==================================================================
-        // PARSE CROSS-CONNECT CONFIGURATIONS
-        // ==================================================================
-        
         let mut cross_connects = Vec::new();
         let mut cross_connect_ids = Vec::new();
         
-        // Find all cross_connectXXXX entries
-        // Look for keys like "cross_connect0000", "cross_connect0001", etc.
         for key in config_map.keys() {
             if key.starts_with("cross_connect") && key.len() == 17 {
                 let id = &key[13..17];
                 
-                // Validate ID is exactly 4 digits
                 if id.chars().all(|c| c.is_ascii_digit()) {
                     if !cross_connect_ids.contains(&id.to_string()) {
                         cross_connect_ids.push(id.to_string());
@@ -555,17 +427,13 @@ impl Config {
             }
         }
         
-        // Sort IDs to process in numerical order
         cross_connect_ids.sort();
         
-        // Parse configuration for each cross-connect
         for id in cross_connect_ids {
-            // Required: cross-connect definition
             let cc_key = format!("cross_connect{}", id);
             let cc_value = config_map.get(&cc_key)
                 .ok_or(format!("Missing cross_connect{}", id))?;
             
-            // Parse cross-connect value: "endpoint_a <-> endpoint_b"
             let parts: Vec<&str> = cc_value.split("<->").collect();
             if parts.len() != 2 {
                 return Err(format!(
@@ -574,43 +442,34 @@ impl Config {
                 ).into());
             }
             
-            // Parse both endpoints
             let endpoint_a = Self::parse_endpoint(parts[0].trim(), &serial_ports)?;
             let endpoint_b = Self::parse_endpoint(parts[1].trim(), &serial_ports)?;
             
-            // Parse optional feature flags
-            
-            // PhilFlag: fixes KISS bugs in TASCO modems and TS-2000
             let phil_key = format!("cross_connect{}_phil_flag", id);
             let phil_flag = config_map.get(&phil_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Dump frames: show hex dump of all frames
             let dump_key = format!("cross_connect{}_dump", id);
             let dump_frames = config_map.get(&dump_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Parse KISS: decode and display KISS frame information
             let parse_key = format!("cross_connect{}_parse_kiss", id);
             let parse_kiss = config_map.get(&parse_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Dump AX.25: show decoded AX.25 frame details
             let ax25_key = format!("cross_connect{}_dump_ax25", id);
             let dump_ax25 = config_map.get(&ax25_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Raw copy: bypass KISS processing, copy bytes directly
             let raw_key = format!("cross_connect{}_raw_copy", id);
             let raw_copy = config_map.get(&raw_key)
                 .and_then(|v| Self::parse_bool(v))
                 .unwrap_or(false);
             
-            // Create CrossConnect and add to vector
             let cross_connect = CrossConnect {
                 id: id.clone(),
                 endpoint_a,
@@ -625,12 +484,6 @@ impl Config {
             cross_connects.push(cross_connect);
         }
         
-        // ==================================================================
-        // CREATE DEFAULT CROSS-CONNECT IF NONE DEFINED
-        // ==================================================================
-        
-        // If no cross-connects are defined but we have serial ports,
-        // create a default cross-connect: serial:0000:0 <-> tcp:0.0.0.0:8001
         if cross_connects.is_empty() && !serial_ports.is_empty() {
             let first_port_id = serial_ports.keys().next().unwrap().clone();
             
@@ -638,7 +491,7 @@ impl Config {
                 id: "0000".to_string(),
                 endpoint_a: CrossConnectEndpoint::SerialPort {
                     port_id: first_port_id,
-                    kiss_port: 0,  // Default KISS port
+                    kiss_port: 0,
                 },
                 endpoint_b: CrossConnectEndpoint::TcpSocket {
                     address: "0.0.0.0".to_string(),
@@ -654,21 +507,14 @@ impl Config {
             cross_connects.push(default_cc);
         }
         
-        // ==================================================================
-        // PARSE GLOBAL SETTINGS
-        // ==================================================================
-        
-        // Log level (0-9, default 5 = NOTICE)
         let log_level = config_map.get("log_level")
             .and_then(|v| v.parse().ok())
             .unwrap_or(5);
         
-        // Optional file paths
         let logfile = config_map.get("logfile").cloned();
         let pidfile = config_map.get("pidfile").cloned();
         let pcap_file = config_map.get("pcap_file").cloned();
         
-        // Boolean flags
         let log_to_console = config_map.get("log_to_console")
             .and_then(|v| Self::parse_bool(v))
             .unwrap_or(true);
@@ -677,7 +523,6 @@ impl Config {
             .and_then(|v| Self::parse_bool(v))
             .unwrap_or(false);
         
-        // Return complete configuration
         Ok(Config {
             serial_ports,
             cross_connects,
@@ -690,15 +535,6 @@ impl Config {
         })
     }
     
-    /// Parse an endpoint specification string
-    /// 
-    /// Format: "tcp:address:port" or "serial:port_id:kiss_port"
-    /// 
-    /// Examples:
-    ///   "tcp:0.0.0.0:8001"         - TCP on all interfaces, port 8001
-    ///   "tcp:127.0.0.1:8002"       - TCP on localhost only, port 8002
-    ///   "serial:0000:0"            - Serial port 0000, KISS port 0
-    ///   "serial:0001:3"            - Serial port 0001, KISS port 3
     fn parse_endpoint(
         s: &str, 
         serial_ports: &HashMap<String, SerialPortConfig>
@@ -712,7 +548,6 @@ impl Config {
         
         match parts[0] {
             "tcp" => {
-                // TCP endpoint: tcp:address:port
                 if parts.len() != 3 {
                     return Err(format!(
                         "Invalid TCP endpoint format: {} (expected: tcp:address:port)", 
@@ -728,7 +563,6 @@ impl Config {
             }
             
             "serial" => {
-                // Serial endpoint: serial:port_id:kiss_port
                 if parts.len() != 3 {
                     return Err(format!(
                         "Invalid serial endpoint format: {} (expected: serial:port_id:kiss_port)", 
@@ -740,7 +574,6 @@ impl Config {
                 let kiss_port = parts[2].parse::<u8>()
                     .map_err(|_| format!("Invalid KISS port: {}", parts[2]))?;
                 
-                // Validate KISS port range (0-15)
                 if kiss_port > 15 {
                     return Err(format!(
                         "KISS port must be 0-15, got: {}", 
@@ -748,7 +581,6 @@ impl Config {
                     ).into());
                 }
                 
-                // Validate that serial port exists
                 if !serial_ports.contains_key(&port_id) {
                     return Err(format!(
                         "Unknown serial port ID: {} (not defined in serial_port{} entries)", 
@@ -768,9 +600,6 @@ impl Config {
         }
     }
     
-    /// Parse flow control string
-    /// 
-    /// Accepts: none, software, hardware, dtrdsr (and common aliases)
     fn parse_flow_control(s: &str) -> Option<FlowControl> {
         match s.to_lowercase().as_str() {
             "software" | "xon" | "xonxoff" | "xon-xoff" => {
@@ -789,9 +618,6 @@ impl Config {
         }
     }
     
-    /// Parse stop bits string
-    /// 
-    /// Accepts: 1, 2, one, two
     fn parse_stop_bits(s: &str) -> Option<StopBits> {
         match s {
             "1" | "one" => Some(StopBits::One),
@@ -800,9 +626,6 @@ impl Config {
         }
     }
     
-    /// Parse parity string
-    /// 
-    /// Accepts: none, even, odd (and common aliases)
     fn parse_parity(s: &str) -> Option<Parity> {
         match s.to_lowercase().as_str() {
             "none" | "n" | "no" => Some(Parity::None),
@@ -812,9 +635,6 @@ impl Config {
         }
     }
     
-    /// Parse boolean string
-    /// 
-    /// Accepts many formats: true/false, yes/no, on/off, 1/0
     fn parse_bool(s: &str) -> Option<bool> {
         match s.to_lowercase().as_str() {
             "1" | "true" | "yes" | "on" => Some(true),
@@ -823,63 +643,38 @@ impl Config {
         }
     }
 }
-
 // ==============================================================================
-// END OF PART 2
-// ==============================================================================
-// Continue with Part 3: Logger, PCAP writer, KISS handling// ==============================================================================
 // MAIN.RS - PART 3 OF 5
 // ==============================================================================
 //
 // This part contains:
-// - Logger implementation (file and console logging)
-// - PCAP writer (Wireshark-compatible packet capture)
-// - KISS frame buffer (frame boundary detection)
-// - KISS helper functions (port extraction and modification)
-// - KISS port translator (port number translation)
-// - PhilFlag processing (TASCO modem bug workaround)
-// - Frame parsing and display functions
+// - Logger implementation
+// - PCAP writer
+// - KISS frame buffer
+// - KISS helper functions
+// - KISS port translator
+// - PhilFlag processing
+// - Frame parsing and display
 //
 // ==============================================================================
 
-// ==============================================================================
-// LOGGER
-// ==============================================================================
-
-/// Thread-safe logger with multiple output targets
-/// 
-/// Supports logging to:
-/// - Console (stdout)
-/// - Log file (append mode)
-/// - Both simultaneously
-/// 
-/// Log levels (syslog-style):
-///   0 = EMERG, 1 = ALERT, 2 = CRIT, 3 = ERROR, 4 = WARN
-///   5 = NOTICE, 6 = INFO, 7 = DEBUG, 8 = TRACE, 9 = VERBOSE
 struct Logger {
-    file: Option<Arc<Mutex<File>>>,  // Optional log file (thread-safe)
-    log_level: u8,                   // Current log level threshold
-    log_to_console: bool,            // Whether to also log to stdout
+    file: Option<Arc<Mutex<File>>>,
+    log_level: u8,
+    log_to_console: bool,
 }
 
 impl Logger {
-    /// Create a new logger
-    /// 
-    /// Arguments:
-    ///   logfile: Optional path to log file
-    ///   log_level: Maximum level to log (0-9)
-    ///   log_to_console: Also print to stdout
     fn new(
         logfile: Option<String>, 
         log_level: u8, 
         log_to_console: bool
     ) -> Result<Self, Box<dyn std::error::Error>> {
         
-        // Open log file if specified
         let file = if let Some(path) = logfile {
             let f = OpenOptions::new()
-                .create(true)      // Create if doesn't exist
-                .append(true)      // Append to existing content
+                .create(true)
+                .append(true)
                 .open(path)?;
             Some(Arc::new(Mutex::new(f)))
         } else { 
@@ -893,43 +688,33 @@ impl Logger {
         })
     }
     
-    /// Log a message at the specified level
-    /// 
-    /// Format: [timestamp] [LEVEL] message
-    /// Example: [2025-12-24 18:30:00] [NOTICE] rax25kb starting
     fn log(&self, message: &str, level: u8) {
-        // Skip if message level exceeds threshold
         if level > self.log_level { 
             return; 
         }
         
-        // Get current timestamp
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
         
-        // Convert level number to string
         let level_str = match level {
-            0 => "EMERG",    // System is unusable
-            1 => "ALERT",    // Action must be taken immediately
-            2 => "CRIT",     // Critical conditions
-            3 => "ERROR",    // Error conditions
-            4 => "WARN",     // Warning conditions
-            5 => "NOTICE",   // Normal but significant
-            6 => "INFO",     // Informational
-            7 => "DEBUG",    // Debug-level messages
-            8 => "TRACE",    // Trace execution
-            9 => "VERBOSE",  // Very detailed output
+            0 => "EMERG",
+            1 => "ALERT",
+            2 => "CRIT",
+            3 => "ERROR",
+            4 => "WARN",
+            5 => "NOTICE",
+            6 => "INFO",
+            7 => "DEBUG",
+            8 => "TRACE",
+            9 => "VERBOSE",
             _ => "UNKNOWN",
         };
         
-        // Format complete log line
         let log_line = format!("[{}] [{}] {}\n", timestamp, level_str, message);
         
-        // Write to console if enabled
         if self.log_to_console { 
             print!("{}", log_line); 
         }
         
-        // Write to file if configured
         if let Some(ref file) = self.file {
             if let Ok(mut f) = file.lock() {
                 let _ = f.write_all(log_line.as_bytes());
@@ -938,104 +723,51 @@ impl Logger {
     }
 }
 
-// ==============================================================================
-// PCAP WRITER
-// ==============================================================================
-
-/// PCAP (Packet Capture) file writer for Wireshark analysis
-/// 
-/// Creates files compatible with Wireshark and other protocol analyzers.
-/// Uses DLT_AX25_KISS (147) link type for AX.25 frames.
-/// 
-/// File format:
-///   Global Header (24 bytes)
-///   Packet Header 1 (16 bytes) + Packet Data 1
-///   Packet Header 2 (16 bytes) + Packet Data 2
-///   ...
 struct PcapWriter {
-    file: Arc<Mutex<File>>,  // Thread-safe file handle
+    file: Arc<Mutex<File>>,
 }
 
 impl PcapWriter {
-    /// Create a new PCAP file and write the global header
-    /// 
-    /// PCAP Global Header:
-    ///   magic_number:   4 bytes (0xa1b2c3d4 = little-endian)
-    ///   version_major:  2 bytes (2)
-    ///   version_minor:  2 bytes (4)
-    ///   thiszone:       4 bytes (0 = GMT)
-    ///   sigfigs:        4 bytes (0 = timestamp accuracy)
-    ///   snaplen:        4 bytes (65535 = max packet length)
-    ///   network:        4 bytes (147 = DLT_AX25_KISS)
     fn new(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::create(path)?;
         
-        // Write PCAP global header
-        file.write_all(&0xa1b2c3d4u32.to_le_bytes())?; // Magic number (native byte order)
-        file.write_all(&2u16.to_le_bytes())?;          // Version major = 2
-        file.write_all(&4u16.to_le_bytes())?;          // Version minor = 4
-        file.write_all(&0i32.to_le_bytes())?;          // Timezone = GMT
-        file.write_all(&0u32.to_le_bytes())?;          // Timestamp accuracy = 0
-        file.write_all(&65535u32.to_le_bytes())?;      // Snapshot length = max
-        file.write_all(&147u32.to_le_bytes())?;        // Link type = AX.25 KISS
+        file.write_all(&0xa1b2c3d4u32.to_le_bytes())?;
+        file.write_all(&2u16.to_le_bytes())?;
+        file.write_all(&4u16.to_le_bytes())?;
+        file.write_all(&0i32.to_le_bytes())?;
+        file.write_all(&0u32.to_le_bytes())?;
+        file.write_all(&65535u32.to_le_bytes())?;
+        file.write_all(&147u32.to_le_bytes())?;
         
         Ok(PcapWriter { 
             file: Arc::new(Mutex::new(file)) 
         })
     }
     
-    /// Write a packet to the PCAP file
-    /// 
-    /// PCAP Packet Header:
-    ///   ts_sec:     4 bytes (timestamp seconds)
-    ///   ts_usec:    4 bytes (timestamp microseconds)
-    ///   incl_len:   4 bytes (captured packet length)
-    ///   orig_len:   4 bytes (original packet length)
-    /// 
-    /// Followed by the actual packet data
     fn write_packet(&self, data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-        // Get current time as Unix timestamp
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?;
         
         let mut file = self.file.lock().unwrap();
         
-        // Write packet header
-        file.write_all(&(now.as_secs() as u32).to_le_bytes())?;      // Seconds
-        file.write_all(&(now.subsec_micros() as u32).to_le_bytes())?; // Microseconds
-        file.write_all(&(data.len() as u32).to_le_bytes())?;          // Captured length
-        file.write_all(&(data.len() as u32).to_le_bytes())?;          // Original length
+        file.write_all(&(now.as_secs() as u32).to_le_bytes())?;
+        file.write_all(&(now.subsec_micros() as u32).to_le_bytes())?;
+        file.write_all(&(data.len() as u32).to_le_bytes())?;
+        file.write_all(&(data.len() as u32).to_le_bytes())?;
         
-        // Write packet data
         file.write_all(data)?;
-        
-        // Ensure data is written to disk
         file.flush()?;
         
         Ok(())
     }
 }
 
-// ==============================================================================
-// KISS FRAME BUFFER
-// ==============================================================================
-
-/// Accumulates bytes and detects KISS frame boundaries
-/// 
-/// KISS frames are delimited by FEND (0xC0) bytes:
-///   FEND [port+cmd] [data] FEND
-/// 
-/// This buffer handles:
-/// - Partial frames arriving over multiple reads
-/// - Multiple frames in a single read
-/// - Frame boundary detection
 struct KissFrameBuffer {
-    buffer: Vec<u8>,  // Accumulated bytes
-    in_frame: bool,   // Currently inside a frame
+    buffer: Vec<u8>,
+    in_frame: bool,
 }
 
 impl KissFrameBuffer {
-    /// Create a new empty frame buffer
     fn new() -> Self {
         KissFrameBuffer {
             buffer: Vec::new(),
@@ -1043,105 +775,63 @@ impl KissFrameBuffer {
         }
     }
     
-    /// Add bytes to the buffer and extract complete frames
-    /// 
-    /// Returns a vector of complete KISS frames (including FEND delimiters)
     fn add_bytes(&mut self, data: &[u8]) -> Vec<Vec<u8>> {
         let mut frames = Vec::new();
         
         for &byte in data {
             if byte == KISS_FEND {
                 if self.in_frame && !self.buffer.is_empty() {
-                    // End of frame - add final FEND and extract
                     self.buffer.push(byte);
                     frames.push(self.buffer.clone());
                     self.buffer.clear();
                     self.in_frame = false;
                 } else {
-                    // Start of new frame
                     self.buffer.clear();
                     self.buffer.push(byte);
                     self.in_frame = true;
                 }
             } else if self.in_frame {
-                // Accumulate bytes inside frame
                 self.buffer.push(byte);
             }
-            // Bytes outside frames are discarded
         }
         
         frames
     }
 }
 
-// ==============================================================================
-// KISS HELPER FUNCTIONS
-// ==============================================================================
-
-/// Extract KISS port number and command from a frame
-/// 
-/// Returns: (port_number, command, data_start_index)
-/// 
-/// Frame format: FEND [port+cmd] [data] FEND
-/// Where port+cmd byte is: (port << 4) | command
-///   port:    bits 4-7 (0-15)
-///   command: bits 0-3 (0-15)
 fn extract_kiss_info(frame: &[u8]) -> Option<(u8, u8, usize)> {
-    // Validate frame has at least FEND + command byte
     if frame.len() < 2 || frame[0] != KISS_FEND {
         return None;
     }
     
-    // Extract port and command from second byte
     let cmd_byte = frame[1];
-    let port = (cmd_byte >> 4) & 0x0F;     // Upper 4 bits
-    let command = cmd_byte & 0x0F;         // Lower 4 bits
+    let port = (cmd_byte >> 4) & 0x0F;
+    let command = cmd_byte & 0x0F;
     
-    // Data starts at index 2
     Some((port, command, 2))
 }
 
-/// Modify the KISS port number in a frame
-/// 
-/// Takes a complete KISS frame and changes the port number in the
-/// command byte while preserving the command.
-/// 
-/// Returns a new frame with the modified port number
 fn modify_kiss_port(frame: &[u8], new_port: u8) -> Vec<u8> {
-    // Validate frame format
     if frame.len() < 2 || frame[0] != KISS_FEND {
         return frame.to_vec();
     }
     
     let mut result = frame.to_vec();
     
-    // Extract original command (lower 4 bits)
     let cmd_byte = frame[1];
     let command = cmd_byte & 0x0F;
     
-    // Construct new command byte with new port
     result[1] = ((new_port & 0x0F) << 4) | command;
     
     result
 }
 
-// ==============================================================================
-// KISS PORT TRANSLATOR
-// ==============================================================================
-
-/// Translates KISS frames between different port numbers
-/// 
-/// Used for:
-/// - Serial-to-serial bridges with different port numbers
-/// - Standard KISS to Extended KISS translation
-/// - Routing frames between TNCs with different addressing
 struct KissPortTranslator {
-    source_port: u8,  // Only translate frames from this port
-    dest_port: u8,    // Translate to this port
+    source_port: u8,
+    dest_port: u8,
 }
 
 impl KissPortTranslator {
-    /// Create a new translator
     fn new(source_port: u8, dest_port: u8) -> Self {
         KissPortTranslator { 
             source_port, 
@@ -1149,42 +839,21 @@ impl KissPortTranslator {
         }
     }
     
-    /// Translate a frame if it matches the source port
-    /// 
-    /// Returns:
-    ///   Some(frame) - Translated frame
-    ///   None - Frame not for this port or no translation needed
     fn translate(&self, frame: &[u8]) -> Option<Vec<u8>> {
-        // Extract port info from frame
         let (current_port, _command, _data_start) = extract_kiss_info(frame)?;
         
-        // Only process frames from our source port
         if current_port != self.source_port {
             return None;
         }
         
-        // Skip translation if ports are the same
         if self.source_port == self.dest_port {
             return None;
         }
         
-        // Translate port number
         Some(modify_kiss_port(frame, self.dest_port))
     }
 }
 
-// ==============================================================================
-// PHILFLAG PROCESSING
-// ==============================================================================
-
-/// Process frame with PhilFlag correction (Serial → TCP direction)
-/// 
-/// PhilFlag fixes KISS protocol bugs in TASCO modem chipsets and
-/// Kenwood TS-2000 TNCs. These devices incorrectly handle FEND bytes
-/// in the data stream.
-/// 
-/// This function escapes any unescaped FEND bytes in the middle of
-/// the frame by converting them to FESC TFEND sequences.
 fn process_frame_with_phil_flag(frame: &[u8]) -> Vec<u8> {
     if frame.len() < 2 { 
         return frame.to_vec(); 
@@ -1192,13 +861,10 @@ fn process_frame_with_phil_flag(frame: &[u8]) -> Vec<u8> {
     
     let mut output = Vec::with_capacity(frame.len() * 2);
     
-    // Keep first FEND as-is
     output.push(frame[0]);
     
-    // Escape any FEND bytes in the middle of the frame
     for i in 1..frame.len()-1 {
         if frame[i] == KISS_FEND {
-            // Convert FEND → FESC TFEND
             output.push(KISS_FESC);
             output.push(KISS_TFEND);
         } else {
@@ -1206,7 +872,6 @@ fn process_frame_with_phil_flag(frame: &[u8]) -> Vec<u8> {
         }
     }
     
-    // Keep last byte (usually FEND) as-is
     if frame.len() > 1 { 
         output.push(frame[frame.len()-1]); 
     }
@@ -1214,20 +879,11 @@ fn process_frame_with_phil_flag(frame: &[u8]) -> Vec<u8> {
     output
 }
 
-/// Process data with PhilFlag correction (TCP → Serial direction)
-/// 
-/// Escapes 'C' and 'c' characters to prevent TASCO modems from
-/// misinterpreting "TC0\n" sequences as commands.
-/// 
-/// This bug affects certain TNC firmwares that use "TC0\n" as a
-/// special command sequence. Escaping these characters prevents
-/// accidental triggering of this command.
 fn process_phil_flag_tcp_to_serial(data: &[u8]) -> Vec<u8> {
     let mut output = Vec::with_capacity(data.len() * 2);
     
     for &byte in data {
-        if byte == 0x43 || byte == 0x63 {  // 'C' or 'c'
-            // Escape by prepending FESC
+        if byte == 0x43 || byte == 0x63 {
             output.push(KISS_FESC);
             output.push(byte);
         } else {
@@ -1238,74 +894,53 @@ fn process_phil_flag_tcp_to_serial(data: &[u8]) -> Vec<u8> {
     output
 }
 
-// ==============================================================================
-// KISS FRAME PARSING AND DISPLAY
-// ==============================================================================
-
-/// Parse and display a KISS frame
-/// 
-/// Shows:
-/// - KISS port number and command type
-/// - Frame length
-/// - AX.25 frame details (if data frame)
-/// 
-/// Also writes to PCAP file if configured
 fn parse_kiss_frame_static(
     data: &[u8], 
     direction: &str, 
     pcap_writer: &Option<Arc<PcapWriter>>,
     dump_ax25: bool
 ) {
-    // Validate frame has proper FEND start
     if data.len() < 2 || data[0] != KISS_FEND { 
         return; 
     }
     
-    // Find end FEND
     let end_pos = match data.iter().skip(1).position(|&b| b == KISS_FEND) {
         Some(pos) => pos + 1,
         None => return,
     };
     
-    // Extract frame content (between FENDs)
     let frame_data = &data[1..end_pos];
     if frame_data.is_empty() { 
         return; 
     }
     
-    // Parse command byte
     let cmd_byte = frame_data[0];
     let port = (cmd_byte >> 4) & 0x0F;
     let command = cmd_byte & 0x0F;
     
-    // Decode command type
     let cmd_name = match command {
-        0 => "Data",           // Data frame (most common)
-        1 => "TXDELAY",        // Set transmit delay
-        2 => "Persistence",    // Set persistence parameter
-        3 => "SlotTime",       // Set slot time
-        4 => "TXtail",         // Set transmit tail
-        5 => "FullDuplex",     // Set full duplex mode
-        6 => "SetHardware",    // Set hardware parameters
-        15 => "Return",        // Exit KISS mode
+        0 => "Data",
+        1 => "TXDELAY",
+        2 => "Persistence",
+        3 => "SlotTime",
+        4 => "TXtail",
+        5 => "FullDuplex",
+        6 => "SetHardware",
+        15 => "Return",
         _ => "Unknown",
     };
     
-    // Display KISS frame info
     println!("=== {} KISS Frame ===", direction);
     println!("  Port: {}, Command: {} ({})", port, command, cmd_name);
     println!("  Frame length: {} bytes", data.len());
     
-    // Process data frames (command 0)
     if command == 0 && frame_data.len() > 1 {
         let ax25_data = &frame_data[1..];
         
-        // Write to PCAP if configured
         if let Some(ref pcap) = pcap_writer {
             let _ = pcap.write_packet(ax25_data);
         }
         
-        // Parse and display AX.25 frame if dump_ax25 is enabled
         if dump_ax25 {
             if let Some(ax25_frame) = AX25Frame::parse(ax25_data) {
                 ax25_frame.print_summary();
@@ -1316,19 +951,12 @@ fn parse_kiss_frame_static(
     println!();
 }
 
-/// Display a frame in hexadecimal dump format
-/// 
-/// Format:
-///   00000000: 01 02 03 04 05 06 07 08  09 0a 0b 0c 0d 0e 0f 10  ................
-///   00000010: 11 12 13 14 15 16 17 18  19 1a 1b 1c 1d 1e 1f 20  ............... 
 fn dump_frame(data: &[u8], title: &str) {
     println!("=== {} ({} bytes) ===", title, data.len());
     
     for (i, chunk) in data.chunks(16).enumerate() {
-        // Address
         print!("{:08x}: ", i * 16);
         
-        // Hex dump (with separator at 8 bytes)
         for (j, byte) in chunk.iter().enumerate() {
             print!("{:02x}", byte);
             if j == 7 { 
@@ -1337,7 +965,6 @@ fn dump_frame(data: &[u8], title: &str) {
             print!(" ");
         }
         
-        // Padding for incomplete lines
         if chunk.len() < 16 {
             for j in chunk.len()..16 {
                 if j == 8 { 
@@ -1349,7 +976,6 @@ fn dump_frame(data: &[u8], title: &str) {
         
         print!(" ");
         
-        // ASCII dump (printable chars only)
         for byte in chunk {
             let ch = if *byte >= 0x20 && *byte <= 0x7e { 
                 *byte as char 
@@ -1364,69 +990,76 @@ fn dump_frame(data: &[u8], title: &str) {
     
     println!();
 }
-
 // ==============================================================================
-// END OF PART 3
-// ==============================================================================
-// Continue with Part 4: Serial port manager and cross-connect manager// ==============================================================================
 // MAIN.RS - PART 4 OF 5
 // ==============================================================================
 //
 // This part contains:
-// - SerialPortManager: Opens and manages multiple serial ports
-// - CrossConnectManager: Creates and manages cross-connect connections
-// - Connection handlers for:
-//   * Serial-to-TCP (with KISS processing)
-//   * Serial-to-Serial (with port translation)
-//   * Raw copy mode (no KISS processing)
-//
-// Architecture:
-//   CrossConnectManager spawns threads for each cross-connect.
-//   Each serial-to-TCP connection gets 2 threads (bidirectional).
-//   Serial-to-serial bridges get 2 threads (one per direction).
+// - SerialPortManager
+// - CrossConnectManager
+// - Connection handlers
+// - XKISS polled mode support
 //
 // ==============================================================================
 
-// ==============================================================================
-// SERIAL PORT MANAGER
-// ==============================================================================
+use std::collections::VecDeque;
 
-/// Manages multiple serial ports with thread-safe access
-/// 
-/// Each serial port is:
-/// - Opened with specified configuration (baud, parity, etc.)
-/// - Wrapped in Arc<Mutex<>> for thread-safe sharing
-/// - Stored in a HashMap by port ID
+/// Queue for storing frames in XKISS polled mode
+struct PolledModeQueue {
+    frames: Arc<Mutex<VecDeque<Vec<u8>>>>,
+    max_size: usize,
+}
+
+impl PolledModeQueue {
+    fn new(max_size: usize) -> Self {
+        PolledModeQueue {
+            frames: Arc::new(Mutex::new(VecDeque::new())),
+            max_size,
+        }
+    }
+    
+    fn push(&self, frame: Vec<u8>) {
+        let mut queue = self.frames.lock().unwrap();
+        if queue.len() < self.max_size {
+            queue.push_back(frame);
+        }
+        // Drop frame if queue is full
+    }
+    
+    fn pop(&self) -> Option<Vec<u8>> {
+        let mut queue = self.frames.lock().unwrap();
+        queue.pop_front()
+    }
+    
+    fn is_empty(&self) -> bool {
+        let queue = self.frames.lock().unwrap();
+        queue.is_empty()
+    }
+    
+    fn clone_arc(&self) -> Arc<Mutex<VecDeque<Vec<u8>>>> {
+        Arc::clone(&self.frames)
+    }
+}
+
 struct SerialPortManager {
     ports: HashMap<String, Arc<Mutex<Box<dyn serialport::SerialPort>>>>,
 }
 
 impl SerialPortManager {
-    /// Create a new empty manager
     fn new() -> Self {
         SerialPortManager { 
             ports: HashMap::new() 
         }
     }
     
-    /// Open a serial port with the specified configuration
-    /// 
-    /// Configures:
-    /// - Baud rate
-    /// - Flow control (none, software, hardware, DTR/DSR)
-    /// - Stop bits (1 or 2)
-    /// - Parity (none, even, odd)
-    /// - Timeout (100ms read timeout)
     fn open_port(
         &mut self, 
         config: &SerialPortConfig
     ) -> Result<(), Box<dyn std::error::Error>> {
         
-        // Create port builder with basic settings
         let mut port_builder = serialport::new(&config.device, config.baud_rate)
             .timeout(Duration::from_millis(100));
         
-        // Configure flow control
         port_builder = match config.flow_control {
             FlowControl::None => {
                 port_builder.flow_control(serialport::FlowControl::None)
@@ -1438,7 +1071,6 @@ impl SerialPortManager {
                 port_builder.flow_control(serialport::FlowControl::Hardware)
             }
             FlowControl::DtrDsr => {
-                // DTR/DSR is Windows-specific
                 #[cfg(target_os = "windows")]
                 { 
                     port_builder.flow_control(serialport::FlowControl::Hardware) 
@@ -1450,7 +1082,6 @@ impl SerialPortManager {
             }
         };
         
-        // Configure stop bits
         port_builder = match config.stop_bits {
             StopBits::One => {
                 port_builder.stop_bits(serialport::StopBits::One)
@@ -1460,7 +1091,6 @@ impl SerialPortManager {
             }
         };
         
-        // Configure parity
         port_builder = match config.parity {
             Parity::None => {
                 port_builder.parity(serialport::Parity::None)
@@ -1473,10 +1103,8 @@ impl SerialPortManager {
             }
         };
         
-        // Open the port
         let port = port_builder.open()?;
         
-        // Store in HashMap wrapped for thread safety
         self.ports.insert(
             config.id.clone(), 
             Arc::new(Mutex::new(port))
@@ -1485,33 +1113,19 @@ impl SerialPortManager {
         Ok(())
     }
     
-    /// Get a cloned Arc reference to a serial port by ID
-    /// 
-    /// Returns None if the port doesn't exist
     fn get_port(&self, id: &str) -> Option<Arc<Mutex<Box<dyn serialport::SerialPort>>>> {
         self.ports.get(id).map(|p| Arc::clone(p))
     }
 }
 
-// ==============================================================================
-// CROSS-CONNECT MANAGER
-// ==============================================================================
-
-/// Manages all cross-connect connections
-/// 
-/// Responsibilities:
-/// - Opens all serial ports
-/// - Starts all cross-connect threads
-/// - Manages connection lifecycle
 struct CrossConnectManager {
-    config: Arc<Config>,                         // Shared configuration
-    serial_manager: Arc<Mutex<SerialPortManager>>, // Serial port manager
-    logger: Arc<Logger>,                         // Shared logger
-    pcap_writer: Option<Arc<PcapWriter>>,        // Optional PCAP capture
+    config: Arc<Config>,
+    serial_manager: Arc<Mutex<SerialPortManager>>,
+    logger: Arc<Logger>,
+    pcap_writer: Option<Arc<PcapWriter>>,
 }
 
 impl CrossConnectManager {
-    /// Create a new manager and open all serial ports
     fn new(
         config: Config, 
         logger: Arc<Logger>, 
@@ -1520,7 +1134,6 @@ impl CrossConnectManager {
         
         let mut serial_manager = SerialPortManager::new();
         
-        // Open all configured serial ports
         for (id, port_config) in &config.serial_ports {
             logger.log(
                 &format!("Opening serial port {}: {}", id, port_config.device), 
@@ -1537,7 +1150,6 @@ impl CrossConnectManager {
         })
     }
     
-    /// Start all configured cross-connects
     fn start_all(&self) -> Result<(), Box<dyn std::error::Error>> {
         for cc in &self.config.cross_connects {
             self.logger.log(
@@ -1549,14 +1161,12 @@ impl CrossConnectManager {
         Ok(())
     }
     
-    /// Start a single cross-connect based on endpoint types
     fn start_cross_connect(
         &self, 
         cc: &CrossConnect
     ) -> Result<(), Box<dyn std::error::Error>> {
         
         match (&cc.endpoint_a, &cc.endpoint_b) {
-            // Serial to TCP (either direction)
             (CrossConnectEndpoint::SerialPort { port_id, kiss_port }, 
              CrossConnectEndpoint::TcpSocket { address, port }) |
             (CrossConnectEndpoint::TcpSocket { address, port },
@@ -1564,13 +1174,11 @@ impl CrossConnectManager {
                 self.start_serial_to_tcp(cc, port_id, *kiss_port, address, *port)?;
             }
             
-            // Serial to Serial (bridging)
             (CrossConnectEndpoint::SerialPort { port_id: id_a, kiss_port: port_a },
              CrossConnectEndpoint::SerialPort { port_id: id_b, kiss_port: port_b }) => {
                 self.start_serial_to_serial(cc, id_a, *port_a, id_b, *port_b)?;
             }
             
-            // TCP to TCP (not supported)
             (CrossConnectEndpoint::TcpSocket { .. }, 
              CrossConnectEndpoint::TcpSocket { .. }) => {
                 return Err("TCP to TCP cross-connects not supported".into());
@@ -1580,13 +1188,6 @@ impl CrossConnectManager {
         Ok(())
     }
     
-    /// Start a serial-to-TCP cross-connect
-    /// 
-    /// Creates a TCP listener that:
-    /// - Accepts client connections
-    /// - Spawns a handler thread for each client
-    /// - Filters frames by KISS port number
-    /// - Applies PhilFlag if configured
     fn start_serial_to_tcp(
         &self, 
         cc: &CrossConnect, 
@@ -1596,7 +1197,6 @@ impl CrossConnectManager {
         tcp_port: u16
     ) -> Result<(), Box<dyn std::error::Error>> {
         
-        // Bind TCP listener
         let bind_address = format!("{}:{}", tcp_address, tcp_port);
         let listener = TcpListener::bind(&bind_address)?;
         
@@ -1605,14 +1205,13 @@ impl CrossConnectManager {
             5
         );
         
-        // Clone Arc references for the spawned thread
         let serial_manager = Arc::clone(&self.serial_manager);
         let serial_id = serial_id.to_string();
         let cc_config = cc.clone();
         let logger = Arc::clone(&self.logger);
         let pcap_writer = self.pcap_writer.clone();
+        let config = Arc::clone(&self.config);
         
-        // Spawn listener thread
         thread::spawn(move || {
             loop {
                 match listener.accept() {
@@ -1623,21 +1222,22 @@ impl CrossConnectManager {
                             5
                         );
                         
-                        // Get serial port reference
                         let serial_port = {
                             let mgr = serial_manager.lock().unwrap();
                             mgr.get_port(&serial_id)
                         };
                         
-                        if let Some(port) = serial_port {
-                            // Handle this connection
+                        let port_config = config.serial_ports.get(&serial_id).cloned();
+                        
+                        if let (Some(port), Some(cfg)) = (serial_port, port_config) {
                             Self::handle_serial_tcp(
                                 stream, 
                                 port, 
                                 kiss_port, 
                                 &cc_config, 
                                 &logger, 
-                                &pcap_writer
+                                &pcap_writer,
+                                &cfg,
                             );
                         } else {
                             logger.log(
@@ -1660,32 +1260,35 @@ impl CrossConnectManager {
         Ok(())
     }
     
-    /// Handle a serial-to-TCP connection
-    /// 
-    /// Creates two threads:
-    /// 1. Serial → TCP: Reads from serial, filters by KISS port, sends to TCP
-    /// 2. TCP → Serial: Reads from TCP, modifies KISS port, sends to serial
     fn handle_serial_tcp(
         mut stream: TcpStream, 
         serial_port: Arc<Mutex<Box<dyn serialport::SerialPort>>>,
         kiss_port: u8, 
         cc_config: &CrossConnect, 
         logger: &Arc<Logger>,
-        pcap_writer: &Option<Arc<PcapWriter>>
+        pcap_writer: &Option<Arc<PcapWriter>>,
+        port_config: &SerialPortConfig,
     ) {
-        // Handle raw copy mode (no KISS processing)
         if cc_config.raw_copy {
             Self::handle_raw_copy(stream, serial_port, logger);
             return;
         }
         
-        // Clone references for serial→TCP thread
+        // Check if we need XKISS polled mode
+        let polled_queue = if port_config.extended_kiss && port_config.polled_mode {
+            Some(PolledModeQueue::new(100)) // Queue up to 100 frames
+        } else {
+            None
+        };
+        
         let serial_clone = Arc::clone(&serial_port);
         let mut read_stream = stream.try_clone()
             .expect("Failed to clone stream");
         let logger_clone = Arc::clone(logger);
         let cc_clone = cc_config.clone();
         let pcap_clone = pcap_writer.clone();
+        let port_cfg_clone = port_config.clone();
+        let polled_queue_clone = polled_queue.as_ref().map(|q| q.clone_arc());
         
         // Spawn Serial → TCP thread
         let serial_to_tcp = thread::spawn(move || {
@@ -1693,27 +1296,33 @@ impl CrossConnectManager {
             let mut frame_buffer = KissFrameBuffer::new();
             
             loop {
-                // Read from serial port
                 let mut port = serial_clone.lock().unwrap();
                 match port.read(&mut buffer) {
                     Ok(n) if n > 0 => {
-                        drop(port); // Release lock immediately
+                        drop(port);
                         
-                        // Extract complete KISS frames
                         let frames = frame_buffer.add_bytes(&buffer[..n]);
                         
-                        for frame in frames {
-                            // Check if frame is for our KISS port
+                        for mut frame in frames {
+                            // Verify checksum if enabled
+                            if port_cfg_clone.extended_kiss && port_cfg_clone.checksum_mode {
+                                frame = match verify_and_remove_checksum(&frame) {
+                                    Some(f) => f,
+                                    None => {
+                                        logger_clone.log("Checksum verification failed", 4);
+                                        continue;
+                                    }
+                                };
+                            }
+                            
                             if let Some((port_num, _, _)) = extract_kiss_info(&frame) {
                                 if port_num == kiss_port {
-                                    // Apply PhilFlag if configured
                                     let processed = if cc_clone.phil_flag {
                                         process_frame_with_phil_flag(&frame)
                                     } else { 
                                         frame 
                                     };
                                     
-                                    // Display frame if configured
                                     if cc_clone.parse_kiss {
                                         parse_kiss_frame_static(
                                             &processed, 
@@ -1725,13 +1334,21 @@ impl CrossConnectManager {
                                         dump_frame(&processed, "Serial->TCP");
                                     }
                                     
-                                    // Send to TCP client
-                                    if let Err(e) = read_stream.write_all(&processed) {
-                                        logger_clone.log(
-                                            &format!("Error writing to TCP: {}", e), 
-                                            3
-                                        );
-                                        return;
+                                    // If polled mode, queue the frame instead of sending
+                                    if let Some(ref queue) = polled_queue_clone {
+                                        let mut q = queue.lock().unwrap();
+                                        if q.len() < 100 {
+                                            q.push_back(processed);
+                                        }
+                                    } else {
+                                        // Standard mode: send immediately
+                                        if let Err(e) = read_stream.write_all(&processed) {
+                                            logger_clone.log(
+                                                &format!("Error writing to TCP: {}", e), 
+                                                3
+                                            );
+                                            return;
+                                        }
                                     }
                                 }
                             }
@@ -1756,6 +1373,49 @@ impl CrossConnectManager {
             }
         });
         
+        // Start polling thread if in polled mode
+        if let Some(ref queue) = polled_queue {
+            let queue_clone = queue.clone_arc();
+            let mut stream_clone = stream.try_clone().expect("Failed to clone stream");
+            let poll_interval = port_config.poll_interval_ms;
+            let logger_poll = Arc::clone(logger);
+            let port_cfg = port_config.clone();
+            
+            thread::spawn(move || {
+                loop {
+                    thread::sleep(Duration::from_millis(poll_interval));
+                    
+                    // Send poll frame
+                    let poll_frame = create_poll_frame(kiss_port);
+                    let poll_to_send = if port_cfg.checksum_mode {
+                        add_kiss_checksum(&poll_frame)
+                    } else {
+                        poll_frame
+                    };
+                    
+                    // Check if there's data to send
+                    let frame_to_send = {
+                        let mut q = queue_clone.lock().unwrap();
+                        q.pop_front()
+                    };
+                    
+                    if let Some(frame) = frame_to_send {
+                        // Send queued frame
+                        if let Err(e) = stream_clone.write_all(&frame) {
+                            logger_poll.log(&format!("Poll send error: {}", e), 3);
+                            break;
+                        }
+                    } else {
+                        // No data, send empty poll response
+                        if let Err(e) = stream_clone.write_all(&poll_to_send) {
+                            logger_poll.log(&format!("Poll response error: {}", e), 3);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+        
         // Main thread handles TCP → Serial
         let mut buffer = [0u8; 1024];
         let mut frame_buffer = KissFrameBuffer::new();
@@ -1765,18 +1425,48 @@ impl CrossConnectManager {
                 Ok(n) if n > 0 => {
                     let frames = frame_buffer.add_bytes(&buffer[..n]);
                     
-                    for frame in frames {
+                    for mut frame in frames {
+                        // Verify checksum if enabled
+                        if port_config.extended_kiss && port_config.checksum_mode {
+                            frame = match verify_and_remove_checksum(&frame) {
+                                Some(f) => f,
+                                None => {
+                                    logger.log("Checksum verification failed (TCP->Serial)", 4);
+                                    continue;
+                                }
+                            };
+                        }
+                        
+                        // Check for acknowledgment required frame
+                        if port_config.extended_kiss && is_ack_required_frame(&frame) {
+                            // Create and send acknowledgment
+                            if let Some(ack) = create_ack_frame(&frame) {
+                                let ack_to_send = if port_config.checksum_mode {
+                                    add_kiss_checksum(&ack)
+                                } else {
+                                    ack
+                                };
+                                
+                                // Send ACK back to TCP client
+                                let _ = stream.write_all(&ack_to_send);
+                            }
+                        }
+                        
                         // Modify KISS port number
                         let modified = modify_kiss_port(&frame, kiss_port);
                         
                         // Apply PhilFlag if configured
-                        let processed = if cc_config.phil_flag {
+                        let mut processed = if cc_config.phil_flag {
                             process_phil_flag_tcp_to_serial(&modified)
                         } else { 
                             modified 
                         };
                         
-                        // Display frame if configured
+                        // Add checksum if enabled
+                        if port_config.extended_kiss && port_config.checksum_mode {
+                            processed = add_kiss_checksum(&processed);
+                        }
+                        
                         if cc_config.parse_kiss {
                             parse_kiss_frame_static(
                                 &processed, 
@@ -1811,15 +1501,9 @@ impl CrossConnectManager {
             }
         }
         
-        // Wait for serial→TCP thread to finish
         drop(serial_to_tcp);
     }
     
-    /// Start a serial-to-serial cross-connect (bridge)
-    /// 
-    /// Creates two threads:
-    /// 1. Port A → Port B: Translates KISS port numbers
-    /// 2. Port B → Port A: Translates KISS port numbers
     fn start_serial_to_serial(
         &self, 
         cc: &CrossConnect, 
@@ -1829,7 +1513,6 @@ impl CrossConnectManager {
         port_b: u8
     ) -> Result<(), Box<dyn std::error::Error>> {
         
-        // Get both serial ports
         let serial_a = { 
             self.serial_manager.lock().unwrap().get_port(id_a) 
         }.ok_or(format!("Serial port {} not found", id_a))?;
@@ -1838,7 +1521,6 @@ impl CrossConnectManager {
             self.serial_manager.lock().unwrap().get_port(id_b) 
         }.ok_or(format!("Serial port {} not found", id_b))?;
         
-        // Create bidirectional translators
         let translator_a_to_b = KissPortTranslator::new(port_a, port_b);
         let translator_b_to_a = KissPortTranslator::new(port_b, port_a);
         
@@ -1848,7 +1530,6 @@ impl CrossConnectManager {
         let cc_a = cc.clone();
         let cc_b = cc.clone();
         
-        // Spawn Port A → Port B thread
         let a = Arc::clone(&serial_a);
         let b = Arc::clone(&serial_b);
         thread::spawn(move || {
@@ -1862,7 +1543,6 @@ impl CrossConnectManager {
                         drop(port);
                         
                         for frame in fb.add_bytes(&buf[..n]) {
-                            // Translate KISS port number
                             if let Some(trans) = translator_a_to_b.translate(&frame) {
                                 if cc_a.parse_kiss {
                                     parse_kiss_frame_static(&trans, "Serial A->B", &pcap_a, cc_a.dump_ax25);
@@ -1886,7 +1566,6 @@ impl CrossConnectManager {
             }
         });
         
-        // Spawn Port B → Port A thread
         thread::spawn(move || {
             let mut buf = [0u8; 1024];
             let mut fb = KissFrameBuffer::new();
@@ -1898,7 +1577,6 @@ impl CrossConnectManager {
                         drop(port);
                         
                         for frame in fb.add_bytes(&buf[..n]) {
-                            // Translate KISS port number
                             if let Some(trans) = translator_b_to_a.translate(&frame) {
                                 if cc_b.parse_kiss {
                                     parse_kiss_frame_static(&trans, "Serial B->A", &pcap_b, cc_b.dump_ax25);
@@ -1925,10 +1603,6 @@ impl CrossConnectManager {
         Ok(())
     }
     
-    /// Handle raw copy mode (no KISS processing)
-    /// 
-    /// Creates two threads that just copy bytes bidirectionally
-    /// with no frame processing. Useful for TNC configuration.
     fn handle_raw_copy(
         mut stream: TcpStream, 
         serial: Arc<Mutex<Box<dyn serialport::SerialPort>>>, 
@@ -1938,7 +1612,6 @@ impl CrossConnectManager {
         let mut rs = stream.try_clone().unwrap();
         let l = Arc::clone(logger);
         
-        // Serial → TCP thread
         thread::spawn(move || {
             let mut buf = [0u8; 1024];
             loop {
@@ -1960,7 +1633,6 @@ impl CrossConnectManager {
             }
         });
         
-        // TCP → Serial loop (main thread)
         let mut buf = [0u8; 1024];
         loop {
             match stream.read(&mut buf) {
@@ -1981,45 +1653,19 @@ impl CrossConnectManager {
         }
     }
 }
-
 // ==============================================================================
-// END OF PART 4
-// ==============================================================================
-// Continue with Part 5: Main function// ==============================================================================
 // MAIN.RS - PART 5 OF 5
 // ==============================================================================
 //
 // This part contains:
 // - Main function
 // - Command-line argument parsing
-// - Configuration loading and validation
+// - Configuration loading
 // - Startup sequence
-// - Signal handling (Ctrl+C)
-// - PID file creation
-// - Logger initialization
-// - PCAP writer initialization
-// - Cross-connect manager initialization and startup
 //
 // ==============================================================================
 
-/// Main entry point for rax25kb
-/// 
-/// Workflow:
-/// 1. Setup signal handler for graceful shutdown
-/// 2. Parse command-line arguments
-/// 3. Load and validate configuration file
-/// 4. Display startup information
-/// 5. Write PID file (if configured)
-/// 6. Initialize logger
-/// 7. Initialize PCAP writer (if configured)
-/// 8. Create and start cross-connect manager
-/// 9. Enter main loop (sleep forever while threads do the work)
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // ==================================================================
-    // SIGNAL HANDLER
-    // ==================================================================
-    
-    // Setup graceful shutdown on Ctrl+C (SIGINT/SIGTERM)
     let running = Arc::new(std::sync::atomic::AtomicBool::new(true));
     let r = running.clone();
     
@@ -2029,15 +1675,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         process::exit(0);
     })?;
     
-    // ==================================================================
-    // COMMAND-LINE ARGUMENT PARSING
-    // ==================================================================
-    
     let args: Vec<String> = std::env::args().collect();
     
-    // Handle --help / -h
     if args.iter().any(|a| a == "-h" || a == "--help") {
-        println!("rax25kb v2.0.0 - Multi-Port Cross-Connect KISS Bridge");
+        println!("rax25kb v1.6.3 - Multi-Port Cross-Connect KISS Bridge");
         println!();
         println!("Usage: {} [OPTIONS]", args[0]);
         println!();
@@ -2064,19 +1705,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     
-    // Get configuration file path (-c option)
     let config_file = args.iter()
         .position(|a| a == "-c")
         .and_then(|i| args.get(i + 1))
         .map(|s| s.as_str())
         .unwrap_or("rax25kb.cfg");
     
-    // Check for quiet flag (-q)
     let quiet = args.iter().any(|a| a == "-q" || a == "--quiet");
-    
-    // ==================================================================
-    // LOAD CONFIGURATION
-    // ==================================================================
     
     let config = match Config::from_file(config_file) {
         Ok(cfg) => cfg,
@@ -2101,11 +1736,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     
-    // ==================================================================
-    // VALIDATE CONFIGURATION
-    // ==================================================================
-    
-    // Ensure at least one serial port is configured
     if config.serial_ports.is_empty() {
         eprintln!("Error: No serial ports configured");
         eprintln!();
@@ -2120,7 +1750,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     }
     
-    // Ensure at least one cross-connect is configured
     if config.cross_connects.is_empty() {
         eprintln!("Error: No cross-connects configured");
         eprintln!();
@@ -2136,21 +1765,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     }
     
-    // ==================================================================
-    // DISPLAY STARTUP INFORMATION
-    // ==================================================================
-    
     if !quiet && !config.quiet_startup {
-        println!("rax25kb v2.0.0 - Multi-Port Cross-Connect KISS Bridge");
+        println!("rax25kb v1.6.3 - Multi-Port Cross-Connect KISS Bridge");
         println!("======================================================");
         println!();
         
-        // Display serial ports
         println!("Serial ports configured: {}", config.serial_ports.len());
         for (id, port) in &config.serial_ports {
             println!("  [{}] {} @ {} baud", id, port.device, port.baud_rate);
             
-            // Show non-default settings
             if port.flow_control != FlowControl::None {
                 println!("       Flow control: {:?}", port.flow_control);
             }
@@ -2166,13 +1789,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         println!();
         
-        // Display cross-connects
         println!("Cross-connects configured: {}", config.cross_connects.len());
         for cc in &config.cross_connects {
             println!("  [{}] {:?} <-> {:?}", 
                 cc.id, cc.endpoint_a, cc.endpoint_b);
             
-            // Show enabled features
             if cc.phil_flag {
                 println!("       PhilFlag correction enabled");
             }
@@ -2189,10 +1810,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!();
     }
     
-    // ==================================================================
-    // WRITE PID FILE
-    // ==================================================================
-    
     if let Some(ref pidfile) = config.pidfile {
         match File::create(pidfile) {
             Ok(mut f) => {
@@ -2206,25 +1823,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     
-    // ==================================================================
-    // INITIALIZE LOGGER
-    // ==================================================================
-    
     let logger = Arc::new(Logger::new(
         config.logfile.clone(),
         config.log_level,
         config.log_to_console,
     )?);
     
-    logger.log("rax25kb v2.0.0 starting", 5);
+    logger.log("rax25kb v1.6.3 starting", 5);
     logger.log(&format!("Configuration loaded from: {}", config_file), 6);
     logger.log(&format!("Serial ports: {}", config.serial_ports.len()), 6);
     logger.log(&format!("Cross-connects: {}", config.cross_connects.len()), 6);
     logger.log(&format!("Log level: {}", config.log_level), 6);
-    
-    // ==================================================================
-    // INITIALIZE PCAP WRITER
-    // ==================================================================
     
     let pcap_writer = if let Some(ref pcap_path) = config.pcap_file {
         match PcapWriter::new(pcap_path) {
@@ -2244,10 +1853,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
-    
-    // ==================================================================
-    // CREATE CROSS-CONNECT MANAGER
-    // ==================================================================
     
     logger.log("Initializing cross-connect manager", 5);
     
@@ -2271,10 +1876,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     
-    // ==================================================================
-    // START ALL CROSS-CONNECTS
-    // ==================================================================
-    
     logger.log("Starting all cross-connects", 5);
     
     if let Err(e) = manager.start_all() {
@@ -2291,10 +1892,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     logger.log("All cross-connects started successfully", 5);
     logger.log("Entering main loop", 6);
-    
-    // ==================================================================
-    // MAIN LOOP
-    // ==================================================================
     
     if !quiet {
         println!("rax25kb is running. Press Ctrl+C to stop.");
@@ -2320,31 +1917,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!();
     }
     
-    // Main loop - just sleep forever
-    // All the work is done by the spawned threads
     loop {
         thread::sleep(Duration::from_secs(60));
     }
 }
-
-// ==============================================================================
-// END OF PART 5
-// ==============================================================================
-//
-// To assemble complete main.rs:
-//
-//   cat src/main_part1.rs \
-//       src/main_part2.rs \
-//       src/main_part3.rs \
-//       src/main_part4.rs \
-//       src/main_part5.rs > src/main.rs
-//
-// Then build:
-//
-//   cargo build --release
-//
-// The compiled binary will be at:
-//
-//   target/release/rax25kb
-//
-// ==============================================================================
