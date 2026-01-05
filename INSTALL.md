@@ -1,545 +1,472 @@
-# Installation Guide
-
-This document provides detailed installation instructions for rax25kb on various platforms.
+# Installation Guide for rax25kb v1.7.3
 
 ## Table of Contents
 
-- [System Requirements](#system-requirements)
-- [Quick Install](#quick-install)
+- [Prerequisites](#prerequisites)
 - [Building from Source](#building-from-source)
-- [Platform-Specific Instructions](#platform-specific-instructions)
-- [Post-Installation](#post-installation)
+- [Installation](#installation)
+- [Platform-Specific Notes](#platform-specific-notes)
+- [Configuration](#configuration)
+- [Verification](#verification)
 - [Troubleshooting](#troubleshooting)
 
-## System Requirements
+## Prerequisites
 
-### Minimum Requirements
+### All Platforms
 
-- **Operating System**: Linux (kernel 2.6+), Windows 7+, macOS 10.12+, or BSD
-- **RAM**: 64 MB
-- **Disk Space**: 50 MB (including source and build files)
-- **Serial Port**: Physical serial port or USB-to-serial adapter
+- **Rust Toolchain**: Version 1.70.0 or later
+  - Install from: https://rustup.rs/
 
-### Software Dependencies
+### Linux
 
-#### For Binary Installation
-- None (statically linked binary)
+- GCC or Clang compiler
+- libudev development files
+- pkg-config
 
-#### For Building from Source
-- Rust 2021 edition or later (1.56.0+)
-- Cargo (Rust package manager)
-- C compiler (for dependencies)
-  - Linux: GCC or Clang
-  - Windows: MSVC or MinGW
-  - macOS: Xcode Command Line Tools
-
-## Quick Install
-
-### Using Pre-built Binaries
-
-If pre-built binaries are available for your platform:
-
-```bash
-# Download the binary
-wget https://github.com/ke4ahr/rax25kb/releases/download/v1.5.1/rax25kb-linux-x64
-
-# Make executable
-chmod +x rax25kb-linux-x64
-
-# Move to system path
-sudo mv rax25kb-linux-x64 /usr/local/bin/rax25kb
-```
-
-### Using Installation Script
-
-```bash
-# Clone repository
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
-
-# Build and install
-./cargo-build.sh
-sudo ./cargo-inst.sh
-```
-
-This installs:
-- Binary: `/usr/local/bin/rax25kb`
-- Man page: `/usr/share/man/man1/rax25kb.1`
-- Example config: `/etc/rax25kb/rax25kb.cfg.example`
-
-## Building from Source
-
-### Step 1: Install Rust
-
-If you don't have Rust installed:
-
-```bash
-# Linux and macOS
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-
-# Verify installation
-rustc --version
-cargo --version
-```
-
-For Windows, download and run [rustup-init.exe](https://rustup.rs/).
-
-### Step 2: Clone Repository
-
-```bash
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
-```
-
-### Step 3: Build
-
-#### Debug Build (for development)
-```bash
-cargo build
-```
-Output: `target/debug/rax25kb`
-
-#### Release Build (optimized)
-```bash
-cargo build --release
-```
-Output: `target/release/rax25kb`
-
-Or use the provided script:
-```bash
-./cargo-build.sh
-```
-
-### Step 4: Test
-
-```bash
-# Show help
-./target/release/rax25kb --help
-
-# Test with example config
-./target/release/rax25kb -c examples/rax25kb.cfg --dry-run
-```
-
-### Step 5: Install
-
-```bash
-sudo ./cargo-inst.sh
-```
-
-Or manually:
-```bash
-# Copy binary
-sudo cp target/release/rax25kb /usr/local/bin/
-
-# Copy man page
-sudo mkdir -p /usr/share/man/man1
-sudo cp man/rax25kb-2025-12-20.1 /usr/share/man/man1/rax25kb.1
-sudo mandb
-
-# Copy example config
-sudo mkdir -p /etc/rax25kb
-sudo cp examples/rax25kb.cfg /etc/rax25kb/rax25kb.cfg.example
-```
-
-## Platform-Specific Instructions
-
-### Linux (Debian/Ubuntu)
-
-#### Install Build Dependencies
+**Debian/Ubuntu:**
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential curl pkg-config libudev-dev
+sudo apt-get install build-essential libudev-dev pkg-config
 ```
 
-#### Install Rust
+**Fedora/RHEL/CentOS:**
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
+sudo dnf install gcc libudev-devel pkgconfig
 ```
 
-#### Build and Install
+**Arch Linux:**
 ```bash
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
-./cargo-build.sh
-sudo ./cargo-inst.sh
-```
-
-#### Serial Port Permissions
-```bash
-# Add user to dialout group
-sudo usermod -a -G dialout $USER
-
-# Log out and log back in for changes to take effect
-```
-
-#### Verify Installation
-```bash
-rax25kb --help
-man rax25kb
-ls -l /dev/ttyUSB* /dev/ttyACM*
-```
-
-### Linux (RHEL/CentOS/Fedora)
-
-#### Install Build Dependencies
-```bash
-sudo dnf install -y gcc make curl pkg-config systemd-devel
-# or for CentOS/RHEL 7
-sudo yum install -y gcc make curl pkg-config systemd-devel
-```
-
-#### Install Rust
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-```
-
-#### Build and Install
-```bash
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
-./cargo-build.sh
-sudo ./cargo-inst.sh
-```
-
-#### Serial Port Permissions
-```bash
-# Add user to dialout or uucp group
-sudo usermod -a -G dialout $USER
-# or
-sudo usermod -a -G uucp $USER
-
-# Log out and log back in
+sudo pacman -S base-devel systemd
 ```
 
 ### Windows
 
-#### Install Rust
-1. Download [rustup-init.exe](https://rustup.rs/)
-2. Run installer and follow prompts
-3. Choose "default" installation
-4. Restart terminal/PowerShell
-
-#### Install Visual Studio Build Tools (if needed)
-1. Download [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/)
-2. Install "Desktop development with C++"
-3. Restart computer
-
-#### Build
-```powershell
-# Clone repository
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
-
-# Build release version
-cargo build --release
-```
-
-#### Install
-```powershell
-# Run as Administrator
-
-# Create installation directory
-New-Item -Path "C:\Program Files\rax25kb" -ItemType Directory -Force
-
-# Copy binary
-Copy-Item target\release\rax25kb.exe "C:\Program Files\rax25kb\"
-
-# Copy example config
-Copy-Item examples\rax25kb.cfg "C:\Program Files\rax25kb\"
-
-# Add to PATH (optional)
-$path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
-[Environment]::SetEnvironmentVariable('Path', "$path;C:\Program Files\rax25kb", 'Machine')
-```
-
-#### Verify Installation
-```powershell
-# Check version
-rax25kb.exe --help
-
-# List COM ports
-Get-WmiObject Win32_SerialPort | Select-Object Name,DeviceID
-```
+- Microsoft Visual C++ Build Tools
+  - Install from: https://visualstudio.microsoft.com/downloads/
+  - Select "Desktop development with C++"
 
 ### macOS
 
-#### Install Xcode Command Line Tools
+- Xcode Command Line Tools
 ```bash
 xcode-select --install
 ```
 
-#### Install Rust
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-```
+## Building from Source
 
-#### Build and Install
+### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/ke4ahr/rax25kb.git
 cd rax25kb
-./cargo-build.sh
-sudo ./cargo-inst.sh
 ```
 
-#### Serial Port Permissions
-macOS requires no special permissions for USB serial devices.
+### 2. Build the Project
 
-#### Verify Installation
+**Debug Build:**
 ```bash
-rax25kb --help
-ls -l /dev/cu.* /dev/tty.*
+cargo build
 ```
 
-### FreeBSD
-
-#### Install Dependencies
+**Release Build (Recommended):**
 ```bash
-sudo pkg install -y rust cargo git
-```
-
-#### Build and Install
-```bash
-git clone https://github.com/ke4ahr/rax25kb.git
-cd rax25kb
 cargo build --release
-sudo cp target/release/rax25kb /usr/local/bin/
-sudo cp man/rax25kb-2025-12-20.1 /usr/local/man/man1/rax25kb.1
 ```
 
-#### Serial Port Permissions
-```bash
-# Add user to dialer group
-sudo pw groupmod dialer -m $USER
-```
+The compiled binary will be located at:
+- Debug: `target/debug/rax25kb`
+- Release: `target/release/rax25kb`
 
-## Post-Installation
-
-### Create Configuration
+### 3. Run Tests (Optional)
 
 ```bash
-# Generate default configuration
-./scripts/generate-default-config.sh rax25kb.cfg
-
-# Or copy example
-cp examples/rax25kb.cfg rax25kb.cfg
+cargo test
 ```
 
-### Edit Configuration
+## Installation
+
+### Linux
+
+#### System-wide Installation
 
 ```bash
-# Edit for your setup
-nano rax25kb.cfg
+# Build release binary
+cargo build --release
 
-# At minimum, update:
-# - serial_port0000 with your device path
-# - cross_connect0000 with desired TCP port
+# Install binary
+sudo install -m 755 target/release/rax25kb /usr/local/bin/
+
+# Install man pages
+sudo install -d /usr/local/share/man/man1
+sudo install -d /usr/local/share/man/man5
+sudo install -m 644 man/rax25kb.1 /usr/local/share/man/man1/
+sudo install -m 644 man/rax25kb.cfg.5 /usr/local/share/man/man5/
+
+# Update man database
+sudo mandb
 ```
 
-### Test Configuration
+#### User Installation
 
 ```bash
-# Test without starting
-rax25kb -c rax25kb.cfg --dry-run
+# Build release binary
+cargo build --release
 
-# Start in foreground (for testing)
-rax25kb -c rax25kb.cfg
+# Install to user's local bin
+mkdir -p ~/.local/bin
+cp target/release/rax25kb ~/.local/bin/
 
-# Press Ctrl+C to stop
+# Add to PATH if not already (add to ~/.bashrc or ~/.zshrc)
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-### Configure Serial Port
+#### Using systemd (Optional)
 
-#### Linux
-```bash
-# Identify your serial device
-ls -l /dev/ttyUSB* /dev/ttyACM*
+Create a systemd service file `/etc/systemd/system/rax25kb.service`:
 
-# Update config
-serial_port0000=/dev/ttyUSB0
-```
-
-#### Windows
-```powershell
-# List COM ports
-Get-WmiObject Win32_SerialPort
-
-# Update config
-serial_port0000=COM3
-```
-
-#### macOS
-```bash
-# Identify device
-ls -l /dev/cu.* /dev/tty.*
-
-# Update config
-serial_port0000=/dev/cu.usbserial-XXXXXXXX
-```
-
-### Run as Service
-
-#### Linux (systemd)
-
-Create `/etc/systemd/system/rax25kb.service`:
 ```ini
 [Unit]
-Description=rax25kb KISS Bridge
+Description=rax25kb AX.25 KISS Bridge
 After=network.target
 
 [Service]
 Type=simple
 User=radio
 Group=dialout
+WorkingDirectory=/etc/rax25kb
 ExecStart=/usr/local/bin/rax25kb -c /etc/rax25kb/rax25kb.cfg
 Restart=on-failure
-RestartSec=5
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Enable and start:
+Enable and start the service:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable rax25kb
 sudo systemctl start rax25kb
-sudo systemctl status rax25kb
 ```
 
-#### Windows (NSSM)
+### Windows
 
-1. Download NSSM from https://nssm.cc/
-2. Install service:
-```powershell
+#### Manual Installation
+
+1. Build the release binary:
+```cmd
+cargo build --release
+```
+
+2. Copy the executable to a directory in your PATH:
+```cmd
+copy target\release\rax25kb.exe C:\Windows\System32\
+```
+
+Or create a dedicated directory:
+```cmd
+mkdir C:\Program Files\rax25kb
+copy target\release\rax25kb.exe "C:\Program Files\rax25kb\"
+```
+
+3. Add to PATH (optional):
+   - Open System Properties → Environment Variables
+   - Add `C:\Program Files\rax25kb` to PATH
+
+#### Running as a Windows Service
+
+Use NSSM (Non-Sucking Service Manager):
+
+1. Download NSSM from https://nssm.cc/download
+2. Install the service:
+```cmd
 nssm install rax25kb "C:\Program Files\rax25kb\rax25kb.exe"
-nssm set rax25kb AppParameters -c "C:\Program Files\rax25kb\rax25kb.cfg"
+nssm set rax25kb AppDirectory "C:\Program Files\rax25kb"
+nssm set rax25kb AppParameters "-c C:\Program Files\rax25kb\rax25kb.cfg"
+nssm set rax25kb DisplayName "rax25kb AX.25 KISS Bridge"
+nssm set rax25kb Description "Multi-port KISS/XKISS bridge for AX.25 TNCs"
+nssm set rax25kb Start SERVICE_AUTO_START
+```
+
+3. Start the service:
+```cmd
 nssm start rax25kb
+```
+
+### macOS
+
+```bash
+# Build release binary
+cargo build --release
+
+# Install binary
+sudo cp target/release/rax25kb /usr/local/bin/
+
+# Install man pages
+sudo mkdir -p /usr/local/share/man/man1
+sudo mkdir -p /usr/local/share/man/man5
+sudo cp man/rax25kb.1 /usr/local/share/man/man1/
+sudo cp man/rax25kb.cfg.5 /usr/local/share/man/man5/
+```
+
+#### Using launchd (Optional)
+
+Create `/Library/LaunchDaemons/org.ke4ahr.rax25kb.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>org.ke4ahr.rax25kb</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/rax25kb</string>
+        <string>-c</string>
+        <string>/usr/local/etc/rax25kb.cfg</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+</dict>
+</plist>
+```
+
+Load the service:
+```bash
+sudo launchctl load /Library/LaunchDaemons/org.ke4ahr.rax25kb.plist
+```
+
+## Platform-Specific Notes
+
+### Linux Serial Port Permissions
+
+Add your user to the `dialout` group:
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+Log out and back in for changes to take effect.
+
+Alternatively, use udev rules. Create `/etc/udev/rules.d/99-serial.rules`:
+```
+KERNEL=="ttyUSB[0-9]*", MODE="0666"
+KERNEL=="ttyACM[0-9]*", MODE="0666"
+```
+
+Reload udev rules:
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+### Windows COM Port Access
+
+- Run as Administrator if you encounter permission issues
+- Verify COM port is not in use by another application
+- Check Device Manager for proper driver installation
+
+### macOS Serial Port Access
+
+Serial devices typically appear as `/dev/cu.usbserial-*` or `/dev/cu.SLAB_USBtoUART`.
+
+Grant Full Disk Access if needed:
+- System Preferences → Security & Privacy → Privacy → Full Disk Access
+- Add Terminal or your application
+
+## Configuration
+
+### Create Configuration Directory
+
+**Linux:**
+```bash
+sudo mkdir -p /etc/rax25kb
+sudo cp doc/examples/rax25kb.cfg /etc/rax25kb/
+```
+
+**Windows:**
+```cmd
+mkdir "C:\Program Files\rax25kb"
+copy doc\examples\rax25kb.cfg "C:\Program Files\rax25kb\"
+```
+
+**macOS:**
+```bash
+sudo mkdir -p /usr/local/etc
+sudo cp doc/examples/rax25kb.cfg /usr/local/etc/
+```
+
+### Edit Configuration
+
+Edit the configuration file for your setup. See `man rax25kb.cfg` or the documentation for details.
+
+**Example minimal configuration:**
+```ini
+# Single serial to TCP bridge
+cross_connect0000.serial_port=/dev/ttyUSB0
+cross_connect0000.baud_rate=9600
+cross_connect0000.tcp_address=0.0.0.0
+cross_connect0000.tcp_port=8001
+```
+
+## Verification
+
+### Test the Installation
+
+```bash
+# Show version and help
+rax25kb --help
+
+# Test with config file (foreground)
+rax25kb -c /path/to/rax25kb.cfg
+
+# Check man pages
+man rax25kb
+man rax25kb.cfg
+```
+
+### Verify Serial Port Access
+
+**Linux:**
+```bash
+ls -l /dev/ttyUSB* /dev/ttyACM*
+```
+
+**Windows:**
+```cmd
+mode
+```
+
+**macOS:**
+```bash
+ls -l /dev/cu.*
 ```
 
 ## Troubleshooting
 
-### Build Errors
+### Common Issues
 
-#### "linker not found"
-```bash
-# Linux: Install build tools
-sudo apt-get install build-essential
+#### "Permission denied" on serial port
 
-# macOS: Install Xcode Command Line Tools
-xcode-select --install
-```
+**Linux:**
+- Add user to dialout group
+- Check udev rules
+- Verify port permissions with `ls -l /dev/ttyUSB0`
 
-#### "could not find pkg-config"
-```bash
-# Linux
-sudo apt-get install pkg-config
-
-# macOS
-brew install pkg-config
-```
-
-#### Rust version too old
-```bash
-rustup update
-```
-
-### Installation Errors
-
-#### Permission denied
-```bash
-# Run with sudo
-sudo ./cargo-inst.sh
-
-# Or manually with sudo
-sudo cp target/release/rax25kb /usr/local/bin/
-```
-
-#### Serial port not found
-```bash
-# Linux: Check if device exists
-ls -l /dev/ttyUSB* /dev/ttyACM*
-
-# Check dmesg for USB devices
-dmesg | grep tty
-
-# Install USB serial drivers if needed
-```
-
-#### Permission denied accessing serial port
-```bash
-# Linux: Add to dialout group
-sudo usermod -a -G dialout $USER
-
-# Log out and back in
-```
-
-### Runtime Errors
+**Windows:**
+- Run as Administrator
+- Check if another application is using the port
+- Verify driver installation
 
 #### "Address already in use"
-```bash
-# Check what's using the port
-sudo netstat -tlnp | grep 8001
 
-# Kill the process or use a different port
+- Another instance is running
+- Another application is using the TCP port
+- Change `tcp_port` in configuration
+
+#### "No such file or directory" for serial port
+
+- Verify device is connected: `lsusb` (Linux) or Device Manager (Windows)
+- Check correct port name
+- Verify driver installation
+
+#### Build Errors
+
+**libudev not found (Linux):**
+```bash
+sudo apt-get install libudev-dev
 ```
 
-#### "No such device"
-```bash
-# Verify serial port path
-ls -l /dev/ttyUSB0
+**MSVC not found (Windows):**
+- Install Visual Studio Build Tools
+- Run from "Developer Command Prompt for VS"
 
-# Check if USB device is connected
-lsusb
+### Getting Help
+
+- Documentation: https://github.com/ke4ahr/rax25kb/
+- Man pages: `man rax25kb`, `man rax25kb.cfg`
+- Issues: https://github.com/ke4ahr/rax25kb/issues
+
+### Logs and Debugging
+
+Enable verbose logging:
+```bash
+rax25kb -c config.cfg -L 9 -l /var/log/rax25kb.log
+```
+
+Check system logs:
+
+**Linux:**
+```bash
+journalctl -u rax25kb -f
+```
+
+**Windows:**
+```cmd
+# Check service logs with Event Viewer
+eventvwr.msc
 ```
 
 ## Uninstallation
 
-### Linux/macOS
+### Linux
+
 ```bash
 # Remove binary
 sudo rm /usr/local/bin/rax25kb
 
-# Remove man page
-sudo rm /usr/share/man/man1/rax25kb.1
+# Remove man pages
+sudo rm /usr/local/share/man/man1/rax25kb.1
+sudo rm /usr/local/share/man/man5/rax25kb.cfg.5
 sudo mandb
 
 # Remove configuration (optional)
 sudo rm -rf /etc/rax25kb
 
-# Remove user data (optional)
-rm -rf ~/.config/rax25kb
+# Remove systemd service (if installed)
+sudo systemctl stop rax25kb
+sudo systemctl disable rax25kb
+sudo rm /etc/systemd/system/rax25kb.service
+sudo systemctl daemon-reload
 ```
 
 ### Windows
-```powershell
-# Remove program
-Remove-Item "C:\Program Files\rax25kb" -Recurse -Force
 
-# Remove from PATH (if added)
-# Use System Properties → Environment Variables → Edit PATH
+```cmd
+# Stop and remove service (if installed)
+nssm stop rax25kb
+nssm remove rax25kb confirm
+
+# Remove files
+rmdir /s "C:\Program Files\rax25kb"
 ```
 
-## Getting Help
+### macOS
 
-- **Documentation**: Run `man rax25kb` or see docs/
-- **Examples**: See examples/ directory
-- **Issues**: https://github.com/ke4ahr/rax25kb/issues
+```bash
+# Stop launchd service (if installed)
+sudo launchctl unload /Library/LaunchDaemons/org.ke4ahr.rax25kb.plist
+sudo rm /Library/LaunchDaemons/org.ke4ahr.rax25kb.plist
+
+# Remove binary and man pages
+sudo rm /usr/local/bin/rax25kb
+sudo rm /usr/local/share/man/man1/rax25kb.1
+sudo rm /usr/local/share/man/man5/rax25kb.cfg.5
+
+# Remove configuration (optional)
+sudo rm -rf /usr/local/etc/rax25kb.cfg
+```
 
 ## Next Steps
 
 After installation:
-1. Review CROSS-CONNECT-README.md for configuration examples
-2. Create your configuration file
-3. Test with your TNC
-4. Set up as a service for production use
-5. Read the documentation for advanced features
 
-## Version Information
+1. Read the documentation: `man rax25kb`
+2. Configure your bridges: `man rax25kb.cfg`
+3. See example configurations in `doc/examples/`
+4. Review the ARCHITECTURE.md for system design
+5. Join the community at https://github.com/ke4ahr/rax25kb/
 
-This installation guide is for rax25kb version 1.5.1.
-
-For updates and release notes, see CHANGELOG.md.

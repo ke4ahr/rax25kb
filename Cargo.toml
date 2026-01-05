@@ -1,19 +1,22 @@
+# Copyright (C) 2025-2026 Kris Kirby, KE4AHR
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 [package]
 name = "rax25kb"
-version = "1.5.1"
+version = "1.7.3"
 edition = "2021"
-authors = ["rax25kb contributors"]
-description = "AX.25 KISS protocol bridge for serial to TCP connections"
+authors = ["Kris Kirby, KE4AHR"]
 license = "GPL-3.0-or-later"
-repository = "https://github.com/ke4ahr/rax25kb"
+description = "AX.25 KISS Bridge - Multi-port serial to TCP bridge with KISS/XKISS translation"
+repository = "https://github.com/ke4ahr/rax25kb/"
 readme = "README.md"
-keywords = ["amateur-radio", "ax25", "kiss", "tnc", "packet-radio"]
-categories = ["network-programming"]
+keywords = ["ax25", "kiss", "ham-radio", "packet-radio", "tnc"]
+categories = ["command-line-utilities", "network-programming"]
 
 [dependencies]
 serialport = "4.5"
-chrono = "0.4"
 ctrlc = "3.4"
+chrono = "0.4"
 
 [profile.release]
 opt-level = 3

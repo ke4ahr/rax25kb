@@ -1,0 +1,534 @@
+.\" Copyright (C) 2025-2026 Kris Kirby, KE4AHR
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.TH RAX25KB.CFG 5 "2025-12-30" "rax25kb 1.7.0" "File Formats"
+.SH NAME
+rax25kb.cfg \- configuration file for rax25kb AX.25 KISS bridge
+.SH DESCRIPTION
+The
+.B rax25kb.cfg
+file configures the rax25kb AX.25 KISS bridge. The file uses a simple key=value format with support for comments and multiple cross-connect definitions.
+.PP
+The configuration file supports two modes:
+.IP \(bu 2
+.B Legacy Mode:
+Single serial-to-TCP bridge using traditional parameters
+.IP \(bu 2
+.B Cross-Connect Mode:
+Multiple independent bridges with advanced features
+.SH FILE FORMAT
+.SS Basic Syntax
+.nf
+# Comments start with hash
+key=value
+key="value with spaces"
+.fi
+.SS Cross-Connect Naming
+Cross-connect parameters use the format:
+.nf
+cross_connectXXXX.parameter=value
+.fi
+.PP
+Where XXXX is a 4-digit number from 0000 to 9999.
+.SH GLOBAL PARAMETERS
+These parameters apply to all cross-connects:
+.TP
+.B log_level=\fILEVEL\fR
+Log verbosity level (0-9, default: 5)
+.RS
+.IP 0
+EMERG - System unusable
+.IP 1
+ALERT - Immediate action required
+.IP 2
+CRIT - Critical conditions
+.IP 3
+ERROR - Error conditions
+.IP 4
+WARN - Warnings
+.IP 5
+NOTICE - Normal but significant
+.IP 6
+INFO - Informational
+.IP 7
+DEBUG - Debug messages
+.IP 8
+TRACE - Trace messages
+.IP 9
+VERBOSE - Verbose trace
+.RE
+.TP
+.B logfile=\fIPATH\fR
+Path to log file (optional)
+.TP
+.B pidfile=\fIPATH\fR
+Path to PID file (optional)
+.TP
+.B log_to_console=\fIyes\fR|\fIno\fR
+Enable console logging (default: yes)
+.TP
+.B log_to_file_only=\fIyes\fR|\fIno\fR
+Log only to file, not console (default: no)
+.TP
+.B quiet_startup=\fIyes\fR|\fIno\fR
+Suppress startup messages (default: no)
+.TP
+.B pcap_file=\fIPATH\fR
+Path to PCAP capture file (optional)
+.TP
+.B max_tcp_clients=\fINUMBER\fR
+(v1.6.8+) Maximum TCP clients per port (default: 3)
+.RS
+Applies to all TCP server mode cross-connects.
+Each port can accept up to this many simultaneous connections.
+Clients are accepted on a first-come basis; additional connections are refused.
+.br
+Range: 1-10 recommended
+.br
+Default: 3 (matches direwolf behavior)
+.RE
+.TP
+.B agw_server_enable=\fIyes\fR|\fIno\fR
+(v1.7.3+) Enable AGW (AGWPE) server (default: no)
+.RS
+When enabled, rax25kb acts as an AGW Packet Engine server,
+allowing AGW-compatible applications to connect.
+AGW and KISS servers can run simultaneously on different ports.
+.RE
+.TP
+.B agw_server_address=\fIADDRESS\fR
+(v1.7.3+) AGW server bind address (default: 0.0.0.0)
+.RS
+IP address for AGW server to listen on.
+Use 0.0.0.0 for all interfaces, 127.0.0.1 for localhost only.
+.RE
+.TP
+.B agw_server_port=\fIPORT\fR
+(v1.7.3+) AGW server port (default: 8000)
+.RS
+TCP port for AGW server. Standard AGWPE port is 8000.
+Must be different from KISS TCP ports to avoid conflicts.
+.RE
+.TP
+.B agw_max_clients=\fINUMBER\fR
+(v1.7.3+) Maximum AGW clients (default: 3)
+.RS
+Maximum number of simultaneous AGW client connections.
+Similar to max_tcp_clients but for AGW protocol.
+Range: 1-10 recommended
+.RE
+.SH LEGACY PARAMETERS
+When no cross_connect definitions exist, these create a single cross_connect0000:
+.TP
+.B serial_port=\fIDEVICE\fR
+Serial port device path (required)
+.RS
+Linux: /dev/ttyUSB0, /dev/ttyACM0
+.br
+Windows: COM1, COM3
+.br
+macOS: /dev/cu.usbserial-*
+.RE
+.TP
+.B baud_rate=\fIRATE\fR
+Serial port baud rate (default: 9600)
+.TP
+.B stop_bits=\fI1\fR|\fI2\fR
+Number of stop bits (default: 1)
+.TP
+.B parity=\fInone\fR|\fIeven\fR|\fIodd\fR
+Parity setting (default: none)
+.TP
+.B flow_control=\fInone\fR|\fIsoftware\fR|\fIhardware\fR|\fIdtrdsr\fR
+Flow control type (default: none)
+.TP
+.B tcp_address=\fIADDRESS\fR
+TCP bind address (default: 0.0.0.0)
+.TP
+.B tcp_port=\fIPORT\fR
+TCP port number (default: 8001)
+.TP
+.B phil_flag=\fIyes\fR|\fIno\fR
+Enable PhilFlag correction (default: no)
+.TP
+.B dump=\fIyes\fR|\fIno\fR
+Dump frames in hex format (default: no)
+.TP
+.B parse_kiss=\fIyes\fR|\fIno\fR
+Parse and display KISS frames (default: no)
+.TP
+.B dump_ax25=\fIyes\fR|\fIno\fR
+Dump AX.25 information fields (default: no)
+.TP
+.B raw_copy=\fIyes\fR|\fIno\fR
+Raw transparent mode (default: no)
+.SH CROSS-CONNECT PARAMETERS
+Define multiple bridges using cross_connectXXXX prefix:
+.SS Required Parameters
+.TP
+.B cross_connectXXXX.serial_port=\fIDEVICE\fR
+Serial port device for this cross-connect
+.SS Serial Port Configuration
+.TP
+.B cross_connectXXXX.baud_rate=\fIRATE\fR
+Baud rate (default: 9600)
+.TP
+.B cross_connectXXXX.stop_bits=\fI1\fR|\fI2\fR
+Stop bits (default: 1)
+.TP
+.B cross_connectXXXX.parity=\fInone\fR|\fIeven\fR|\fIodd\fR
+Parity (default: none)
+.TP
+.B cross_connectXXXX.data_bits=\fI7\fR|\fI8\fR
+Data bits (default: 8, v1.6.6+). Forced to 8 when KISS/XKISS active.
+.TP
+.B cross_connectXXXX.flow_control=\fITYPE\fR
+Flow control: none, software, hardware, dtrdsr (default: none)
+.SS Destination Configuration
+.TP
+.B cross_connectXXXX.tcp_mode=\fIserver\fR|\fIclient\fR|\fInone\fR
+TCP mode (default: server, v1.7.3+). Server listens for connections, client connects to remote server.
+.TP
+.B cross_connectXXXX.tcp_address=\fIADDRESS\fR
+TCP bind address for server mode (default: 0.0.0.0)
+.TP
+.B cross_connectXXXX.tcp_port=\fIPORT\fR
+TCP port number for server mode (default: 8001)
+.TP
+.B cross_connectXXXX.tcp_server_address=\fIHOST\fR
+Remote server address for client mode (required when tcp_mode=client, v1.7.3+)
+.TP
+.B cross_connectXXXX.tcp_server_port=\fIPORT\fR
+Remote server port for client mode (required when tcp_mode=client, v1.7.3+)
+.TP
+.B cross_connectXXXX.serial_to_serial=\fIDEVICE\fR
+Connect to another serial port instead of TCP (optional)
+.SS KISS/XKISS Configuration
+.TP
+.B cross_connectXXXX.kiss_port=\fINUMBER\fR
+KISS port number (0-15, default: 0)
+.RS
+For serial port hierarchy: KISS port 0 controls serial parameters.
+Ports 1-15 inherit parameters from port 0 on the same serial device.
+.RE
+.TP
+.B cross_connectXXXX.kiss_chan=\fINUMBER\fR
+(v1.7.3+) Channel filtering and remapping (-1 or 0-15, default: -1)
+.RS
+.IP "-1"
+All channels (no filtering, no remapping)
+.IP "0-15"
+Only packets matching this channel are sent to TCP clients.
+Outgoing: Internal channel N is remapped to KISS channel 0 for application.
+Incoming: Application's KISS channel 0 is remapped to channel N for serial.
+.br
+Useful for legacy applications that don't understand multi-channel KISS.
+.RE
+.TP
+.B cross_connectXXXX.kiss_copy=\fIyes\fR|\fIno\fR
+(v1.6.8+) Enable KISSCOPY - broadcast between TCP clients (default: no)
+.RS
+When enabled, packets received from one TCP client are also sent to all other connected clients.
+Useful for monitoring applications.
+Only applies when max_tcp_clients > 1.
+.RE
+.TP
+.B cross_connectXXXX.agw_enable=\fIyes\fR|\fIno\fR
+(v1.7.3+) Enable AGW protocol for this cross-connect (default: no)
+.RS
+When enabled (and agw_server_enable=yes globally), this bridge will
+accept AGW protocol connections. AGW and KISS can run simultaneously
+on the same TNC using different ports.
+.RE
+.TP
+.B cross_connectXXXX.agw_port=\fINUMBER\fR
+(v1.7.3+) AGW port number (0-255, default: 0)
+.RS
+AGW port number reported to AGW clients. Maps to the KISS port
+for this cross-connect. AGW clients will see this port number in
+AGW frame headers.
+.RE
+.SS XKISS Configuration
+.TP
+.B cross_connectXXXX.xkiss_mode=\fIyes\fR|\fIno\fR
+Enable Extended KISS mode (default: no)
+.TP
+.B cross_connectXXXX.xkiss_port=\fINUMBER\fR
+XKISS port number when translating (required if xkiss_mode=yes)
+.TP
+.B cross_connectXXXX.xkiss_checksum=\fIyes\fR|\fIno\fR
+Enable XKISS checksums (default: no, v1.6.6+)
+.TP
+.B cross_connectXXXX.xkiss_polling=\fIyes\fR|\fIno\fR
+Enable XKISS polling mode (default: no, v1.6.6+)
+.TP
+.B cross_connectXXXX.xkiss_poll_timer_ms=\fIMILLISECONDS\fR
+Polling interval in milliseconds (default: 100, v1.6.6+)
+.TP
+.B cross_connectXXXX.xkiss_rx_buffer_size=\fIBYTES\fR
+RX buffer size for polling mode (4096-1048576, default: 16384, v1.7.3+)
+.SS TCP-to-TCP Configuration (DANGEROUS)
+.TP
+.B cross_connectXXXX.tcp_to_tcp_dangerous=\fIyes\fR|\fIno\fR
+Enable TCP-to-TCP routing (default: no, v1.7.3+). WARNING: Bypasses serial isolation!
+.TP
+.B cross_connectXXXX.tcp_to_tcp_also_dangerous=\fIyes\fR|\fIno\fR
+Disable KISS validation for TCP-to-TCP (default: no, v1.7.3+). VERY DANGEROUS!
+.SS Feature Flags
+.TP
+.B cross_connectXXXX.phil_flag=\fIyes\fR|\fIno\fR
+Enable PhilFlag correction (default: no)
+.TP
+.B cross_connectXXXX.reframe_large_packets=\fIyes\fR|\fIno\fR
+Automatically split large packets (default: no, v1.7.3+, experimental)
+.TP
+.B cross_connectXXXX.dump=\fIyes\fR|\fIno\fR
+Dump frames (default: no)
+.TP
+.B cross_connectXXXX.parse_kiss=\fIyes\fR|\fIno\fR
+Parse KISS frames (default: no)
+.TP
+.B cross_connectXXXX.dump_ax25=\fIyes\fR|\fIno\fR
+Dump AX.25 info (default: no)
+.TP
+.B cross_connectXXXX.raw_copy=\fIyes\fR|\fIno\fR
+Raw transparent mode (default: no)
+.SH IMPORTANT NOTES
+.SS Serial Port Modes (v1.6.6+)
+When KISS or XKISS is active, the serial port is automatically configured to 8N1 (8 data bits, no parity, 1 stop bit) per the KISS specification, regardless of data_bits and parity settings.
+.PP
+7-bit modes (7N1, 7E1, 7O1) are only used in raw_copy mode.
+.SS MFJ-1278 TNCs (v1.7.3+)
+Some MFJ-1278 TNCs default to 7E1 at 2400 baud. Configure with data_bits=7, parity=even, and raw_copy=yes initially.
+.SS XKISS Polling Mode (v1.6.6+)
+What other systems call "polled_mode" is called "polling_mode" in this application.
+.SS TCP-to-TCP Mode (v1.7.3+)
+TCP-to-TCP mode is DANGEROUS and bypasses hardware serial isolation. Only use in controlled environments. Requires tcp_to_tcp_dangerous=true. By default, enforces KISS packet validation unless tcp_to_tcp_also_dangerous=true.
+.SS TNC Emulation (v1.7.3+)
+rax25kb can emulate a KISS or XKISS TNC on a TCP port, allowing applications to connect as if it were hardware.
+.SH EXAMPLES
+.SS Example 1: Legacy Single Bridge
+.nf
+# Simple serial to TCP bridge
+serial_port=/dev/ttyUSB0
+baud_rate=9600
+tcp_address=0.0.0.0
+tcp_port=8001
+phil_flag=yes
+parse_kiss=yes
+log_level=6
+logfile=/var/log/rax25kb.log
+.fi
+.SS Example 2: Multiple TCP Bridges
+.nf
+# First bridge
+cross_connect0000.serial_port=/dev/ttyUSB0
+cross_connect0000.baud_rate=9600
+cross_connect0000.tcp_address=0.0.0.0
+cross_connect0000.tcp_port=8001
+cross_connect0000.phil_flag=yes
+
+# Second bridge
+cross_connect0001.serial_port=/dev/ttyUSB1
+cross_connect0001.baud_rate=19200
+cross_connect0001.tcp_address=0.0.0.0
+cross_connect0001.tcp_port=8002
+cross_connect0001.parse_kiss=yes
+
+# Global settings
+log_level=5
+logfile=/var/log/rax25kb.log
+.fi
+.SS Example 3: Serial-to-Serial with KISS Translation
+.nf
+# KISS port 0 to XKISS port 5 translation
+cross_connect0000.serial_port=/dev/ttyUSB0
+cross_connect0000.baud_rate=9600
+cross_connect0000.kiss_port=0
+cross_connect0000.serial_to_serial=/dev/ttyUSB1
+
+cross_connect0001.serial_port=/dev/ttyUSB1
+cross_connect0001.baud_rate=9600
+cross_connect0001.xkiss_mode=yes
+cross_connect0001.xkiss_port=5
+
+log_level=7
+.fi
+.SS Example 4: Windows Configuration
+.nf
+# Windows COM ports
+cross_connect0000.serial_port=COM3
+cross_connect0000.baud_rate=9600
+cross_connect0000.tcp_address=0.0.0.0
+cross_connect0000.tcp_port=8001
+cross_connect0000.phil_flag=yes
+
+log_level=5
+logfile=C:\\\\ProgramData\\\\rax25kb\\\\rax25kb.log
+pidfile=C:\\\\ProgramData\\\\rax25kb\\\\rax25kb.pid
+.fi
+.SS Example 5: Advanced Multi-Port Setup
+.nf
+# Main TNC on port 8001
+cross_connect0000.serial_port=/dev/ttyUSB0
+cross_connect0000.baud_rate=9600
+cross_connect0000.tcp_address=192.168.1.100
+cross_connect0000.tcp_port=8001
+cross_connect0000.phil_flag=yes
+cross_connect0000.parse_kiss=yes
+
+# Secondary TNC on port 8002
+cross_connect0001.serial_port=/dev/ttyUSB1
+cross_connect0001.baud_rate=19200
+cross_connect0001.flow_control=hardware
+cross_connect0001.tcp_address=192.168.1.100
+cross_connect0001.tcp_port=8002
+
+# Monitoring TNC with PCAP
+cross_connect0002.serial_port=/dev/ttyUSB2
+cross_connect0002.baud_rate=9600
+cross_connect0002.tcp_address=127.0.0.1
+cross_connect0002.tcp_port=8003
+cross_connect0002.raw_copy=yes
+
+# Global settings
+log_level=6
+logfile=/var/log/rax25kb.log
+pidfile=/var/run/rax25kb.pid
+pcap_file=/var/log/rax25kb.pcap
+.fi
+.SS Example 6: KISS to XKISS Gateway
+.nf
+# Standard KISS TNC
+cross_connect0000.serial_port=/dev/ttyUSB0
+cross_connect0000.baud_rate=9600
+cross_connect0000.kiss_port=0
+cross_connect0000.tcp_address=0.0.0.0
+cross_connect0000.tcp_port=8001
+
+# XKISS TNC with translation
+cross_connect0001.serial_port=/dev/ttyUSB1
+cross_connect0001.baud_rate=9600
+cross_connect0001.xkiss_mode=yes
+cross_connect0001.xkiss_port=3
+cross_connect0001.serial_to_serial=/dev/ttyUSB0
+
+log_level=7
+logfile=/tmp/kiss_xkiss.log
+.fi
+.SS Example 7: TCP Client Mode (v1.7.3+)
+.nf
+# Connect to remote TCP server
+cross_connect0002.serial_port=/dev/ttyUSB2
+cross_connect0002.baud_rate=9600
+cross_connect0002.tcp_mode=client
+cross_connect0002.tcp_server_address=192.168.1.100
+cross_connect0002.tcp_server_port=8001
+cross_connect0002.kiss_port=0
+
+log_level=6
+.fi
+.SS Example 8: XKISS with RX Buffer (v1.7.3+)
+.nf
+# XKISS with polling and buffering
+cross_connect0003.serial_port=/dev/ttyUSB3
+cross_connect0003.baud_rate=9600
+cross_connect0003.tcp_port=8003
+cross_connect0003.xkiss_mode=yes
+cross_connect0003.xkiss_port=5
+cross_connect0003.xkiss_polling=yes
+cross_connect0003.xkiss_poll_timer_ms=100
+cross_connect0003.xkiss_rx_buffer_size=32768
+
+log_level=7
+.fi
+.SS Example 9: TCP-to-TCP (DANGEROUS, v1.7.3+)
+.nf
+# WARNING: Only for controlled lab environments!
+# Server side
+cross_connect0004.tcp_mode=server
+cross_connect0004.tcp_address=127.0.0.1
+cross_connect0004.tcp_port=8004
+cross_connect0004.tcp_to_tcp_dangerous=yes
+cross_connect0004.tcp_to_tcp_also_dangerous=no
+
+# Client side
+cross_connect0005.tcp_mode=client
+cross_connect0005.tcp_server_address=127.0.0.1
+cross_connect0005.tcp_server_port=8005
+cross_connect0005.tcp_to_tcp_dangerous=yes
+
+log_level=6
+.fi
+.SH CONFIGURATION NOTES
+.SS Cross-Connect Limits
+.IP \(bu 2
+Maximum 10,000 cross-connects (0000-9999)
+.IP \(bu 2
+Each requires unique serial port or TCP port
+.IP \(bu 2
+Serial ports cannot be shared between cross-connects
+.IP \(bu 2
+TCP ports cannot be shared between cross-connects
+.SS Serial Port Configuration
+.IP \(bu 2
+KISS TNCs typically use 8N1 (8 data bits, no parity, 1 stop bit)
+.IP \(bu 2
+No flow control is typical for KISS
+.IP \(bu 2
+Verify baud rate matches TNC configuration
+.SS TCP Configuration
+.IP \(bu 2
+Each cross-connect accepts one TCP client at a time
+.IP \(bu 2
+Bind to 0.0.0.0 for all interfaces
+.IP \(bu 2
+Bind to 127.0.0.1 for localhost only
+.IP \(bu 2
+Bind to specific IP for one interface
+.SS KISS/XKISS Translation
+.IP \(bu 2
+kiss_port: Standard KISS port number (0-15)
+.IP \(bu 2
+xkiss_mode: Enable Extended KISS mode
+.IP \(bu 2
+xkiss_port: Target port for translation
+.IP \(bu 2
+Translation occurs bidirectionally
+.SS PhilFlag Correction
+PhilFlag addresses TASCO modem bugs:
+.IP \(bu 2
+Escapes 0xC0 within frames (serial to network)
+.IP \(bu 2
+Escapes C/c characters (network to serial)
+.IP \(bu 2
+Prevents TC0\\n command parsing issues
+.SS Raw Copy Mode
+.IP \(bu 2
+Disables all KISS processing
+.IP \(bu 2
+Transparent byte-for-byte pass-through
+.IP \(bu 2
+Useful for non-KISS protocols
+.IP \(bu 2
+Cannot be used with PhilFlag or parsing
+.SH FILES
+.TP
+.I rax25kb.cfg
+Default configuration file (current directory)
+.TP
+.I /etc/rax25kb/rax25kb.cfg
+System configuration (Linux)
+.TP
+.I /usr/local/etc/rax25kb.cfg
+System configuration (macOS)
+.TP
+.I C:\\Program Files\\rax25kb\\rax25kb.cfg
+System configuration (Windows)
+.SH SEE ALSO
+.BR rax25kb (1)
+.PP
+Full documentation: https://github.com/ke4ahr/rax25kb/
+.SH AUTHOR
+Written by Kris Kirby, KE4AHR.
+.SH COPYRIGHT
+Copyright \(co 2025-2026 Kris Kirby, KE4AHR. License GPLv3+.
