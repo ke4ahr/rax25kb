@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // rax25kb main source
-// Version: 1.7.0
+// Version: 1.7.3 
+//
+// Version: 1.7.3 also carried Version 1.7.0 in above text
+// until updated.
 //
 // This file is part of rax25kb.
 //
