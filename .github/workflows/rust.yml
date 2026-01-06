@@ -1,54 +1,66 @@
 name: Build
 on: [workflow_dispatch]
 env:
-  # The project name specified in your Cargo.toml
   PROJECT_NAME: rax25kb
+
 jobs:
   build:
-    # Set the job to run on the platform specified by the matrix below
     runs-on: ${{ matrix.runner }}
- 
-    # Define the build matrix for cross-compilation
+    
     strategy:
       matrix:
         include:
           - name: win-amd64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
- 
-    # The steps to run for each matrix item
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
- 
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: "${{ matrix.target }}"
- 
+
       - name: Setup Cache
         uses: Swatinem/rust-cache@v2
- 
-      - name: Build Binary
-        run: cargo build --verbose --release --target ${{ matrix.target }}
- 
-      - name: Release Binary
+
+      # Extract version from Cargo.toml
+      - name: Get Rust Version
+        id: cargo-version
         shell: bash
         run: |
-          BIN_SUFFIX=""
+          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build Binary
+        run: cargo build --verbose --release --target ${{ matrix.target }}
+
+      - name: Prepare Versioned Artifact
+        shell: bash
+        run: |
+          # Determine executable extension
           if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
             BIN_SUFFIX=".exe"
+          else
+            BIN_SUFFIX=""
           fi
- 
-          # The built binary output location
-          BIN_OUTPUT="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
- 
-          # Define a better name for the final binary
-          BIN_RELEASE="${PROJECT_NAME}-${{ matrix.name }}${BIN_SUFFIX}"
-          BIN_RELEASE_VERSIONED="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${BIN_SUFFIX}"
- 
+
+          # Original binary path
+          BIN_INPUT="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
+          
+          # Versioned artifact filename (e.g., rax25kb-v0.1.0-win-amd64.exe)
+          BIN_OUTPUT="${PROJECT_NAME}-v${VERSION}-${{ matrix.name }}${BIN_SUFFIX}"
+
+          # Rename binary to include version before upload
+          cp "$BIN_INPUT" "$BIN_OUTPUT"
+
+          # Export paths for artifact upload
           echo "ARTIFACT_PATH=$BIN_OUTPUT" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$BIN_OUTPUT" >> $GITHUB_ENV
+
       - uses: actions/upload-artifact@v4
         with:
-          name: rax25kb-${{ matrix.target }}-release
+          name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}

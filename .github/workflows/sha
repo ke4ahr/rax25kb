@@ -1,0 +1,64 @@
+name: Build
+on: [workflow_dispatch]
+env:
+  PROJECT_NAME: rax25kb
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    
+    strategy:
+      matrix:
+        include:
+          - name: win-amd64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: "${{ matrix.target }}"
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build Binary
+        run: cargo build --verbose --release --target ${{ matrix.target }}
+
+      - name: Create Versioned Artifacts
+        shell: bash
+        run: |
+          # Determine executable extension
+          if [[ "${{ matrix.runner}}" = "windows-latest" ]]; then
+            BIN_SUFFIX=".exe"
+            CHECKSUM_SUFFIX="_sha256sum.txt"
+          else
+            BIN_SUFFIX=""
+            CHECKSUM_SUFFIX=".sha256sum"
+          fi
+
+          # Source binary path
+          SRC_BINARY="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
+          
+          # Final artifact paths
+          ARTIFACT_BINARY="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${BIN_SUFFIX}"
+          ARTIFACT_CHECKSUM="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${CHECKSUM_SUFFIX}"
+
+          # Copy binary to final name
+          cp "${SRC_BINARY}" "${ARTIFACT_BINARY}"
+
+          # Generate SHA checksum file (works on Windows/Linux/macOS runners)
+          sha256sum "${ARTIFACT_BINARY}" | awk '{print $1}' > "${ARTIFACT_CHECKSUM}"
+
+          # Export artifact paths
+          echo "ARTIFACTS=${ARTIFACT_BINARY},${ARTIFACT_CHECKSUM}" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rax25kb-${{ matrix.target }}-release
+          path: |
+            ${{ env.ARTIFACTS }}
