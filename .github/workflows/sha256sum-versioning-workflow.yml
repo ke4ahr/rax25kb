@@ -1,4 +1,4 @@
-name: Build
+name: Build Version sha256sum
 on: [workflow_dispatch]
 env:
   PROJECT_NAME: rax25kb

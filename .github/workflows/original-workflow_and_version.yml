@@ -1,4 +1,4 @@
-name: Build
+name: Build with Version Number
 on: [workflow_dispatch]
 env:
   PROJECT_NAME: rax25kb
