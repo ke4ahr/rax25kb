@@ -57,7 +57,7 @@ jobs:
             SUM_OUTPUT="${BIN_OUTPUT}.sha256sum"
           fi
 
-          shasum -a 256 "$BIN_OUTPUT" > "$SUM_OUTPUT"
+          sha256sum "$BIN_OUTPUT" > "$SUM_OUTPUT"
 
           echo "ARTIFACT_PATH=$BIN_OUTPUT" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$BIN_OUTPUT" >> $GITHUB_ENV
