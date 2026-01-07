@@ -1,0 +1,55 @@
+name: Build Ver sha256 Ubuntu
+
+on: [workflow_dispatch]
+
+env:
+  PROJECT_NAME: rax25kb
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Get Rust Version
+        id: cargo-version
+        run: |
+          VERSION=$(cargo metadata --format-version=1 --no-deps | jq -r '.packages[0].version')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Build Binary
+        run: cargo build --verbose --release
+
+      - name: Prepare Versioned Artifact
+        run: |
+          BIN_INPUT="target/release/${PROJECT_NAME}"
+          BIN_OUTPUT="${PROJECT_NAME}-v${VERSION}-linux-amd64"
+          cp "$BIN_INPUT" "$BIN_OUTPUT"
+          
+          # Generate checksum
+          SUM_OUTPUT="${BIN_OUTPUT}.sha256sum"
+          sha256sum "$BIN_OUTPUT" > "$SUM_OUTPUT"
+          
+          echo "ARTIFACT_PATH=$BIN_OUTPUT" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$BIN_OUTPUT" >> $GITHUB_ENV
+          echo "SUM_PATH=$SUM_OUTPUT" >> $GITHUB_ENV
+          echo "SUM_NAME=$SUM_OUTPUT" >> $GITHUB_ENV
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
+
+      - name: Upload Checksum Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.SUM_NAME }}
+          path: ${{ env.SUM_PATH }}
